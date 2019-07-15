@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 ////////////////////////////////////////////////////////
 // a class to save all the information of a chess game
@@ -25,126 +26,370 @@ public class Engine
     public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 59 };
     public HashSet<int> BlackKings   { get; private set; } = new HashSet<int> { 60 };
     
-                               // allow empty moves for analysis
-    public enum MoveType : byte { None, Quiet, Capture, Castle, EnPassant };
+    // allow for empty moves for analysis
+    public enum MoveType : byte { None, Normal, Castle, EnPassant };
     public enum PieceType : byte { None, Pawn, Rook, Knight, Bishop, Queen, King };
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
     private class Move
     {
-        public bool WhiteMove { get; private set; }
-        public bool CanCastle { get; private set; }
-        public int Source { get; private set; }
-        public int Target { get; private set; }
-        public MoveType Type { get; private set; }
-        public PieceType Moved { get; private set; }
-        public PieceType Captured { get; private set; } // also used for promotion
+        public bool WhiteMove { get; set; } = false;
+        public bool CanCastle { get; set; } = true;
+        public int Source { get; set; } = 0;
+        public int Target { get; set; } = 0;
+        public MoveType Type { get; set; } = MoveType.Normal;
+        public PieceType Moved { get; set; } = PieceType.None;
+        public PieceType Captured { get; set; } = PieceType.None;
+        public PieceType Promotion { get; set; } = PieceType.None;
 
-        public Move(bool whiteMove, bool canCastle, int source, int target,
-                    MoveType type, PieceType moved, PieceType captured)
+        public Move DeepCopy()
         {
-            WhiteMove = whiteMove;
-            CanCastle = canCastle;
-            Source = source;
-            Target = target;
-            Type = type;
-            Moved = moved;
-            Captured = captured;
+            var copy = new Move() {
+                WhiteMove = WhiteMove,
+                CanCastle = CanCastle,
+                Source = Source,
+                Target = Target,
+                Type = Type,
+                Moved = Moved,
+                Captured = Captured,
+                Promotion = Promotion
+            };
+            return copy;
         }
     }
 
-
-    // used for checking if double push available
+    // for checking puush
     private HashSet<int> whitePawnsInit, blackPawnsInit;
+    // for checking blocks
     private HashSet<int> occupancy;
+    // for checking captures
+    private Dictionary<int, PieceType> whiteOccupancy, blackOccupancy;
     public Engine(int ranks=8, int files=8)
     {
         nRanks = ranks;
         nFiles = files;
+
         whitePawnsInit = new HashSet<int>(WhitePawns);
         blackPawnsInit = new HashSet<int>(BlackPawns);
-
         InitOccupancy();
-        previous = new Move(false, true, 0, 0,
-                            MoveType.None, PieceType.None, PieceType.None);
+        // previous = new Move(false, true, 0, 0,
+                            // MoveType.None, PieceType.None, PieceType.None, PieceType.None);
+        previous = new Move() {
+            WhiteMove = false,
+            CanCastle = true
+        };
     }
 
     private void InitOccupancy()
     {
+        whiteOccupancy = new Dictionary<int, PieceType>();
+        foreach (int pos in WhitePawns)   whiteOccupancy[pos] = PieceType.Pawn;
+        foreach (int pos in WhiteRooks)   whiteOccupancy[pos] = PieceType.Rook;
+        foreach (int pos in WhiteKnights) whiteOccupancy[pos] = PieceType.Knight;
+        foreach (int pos in WhiteBishops) whiteOccupancy[pos] = PieceType.Bishop;
+        foreach (int pos in WhiteQueens)  whiteOccupancy[pos] = PieceType.Queen;
+        foreach (int pos in WhiteKings)   whiteOccupancy[pos] = PieceType.King;
+        blackOccupancy = new Dictionary<int, PieceType>();
+        foreach (int pos in BlackPawns)   blackOccupancy[pos] = PieceType.Pawn;
+        foreach (int pos in BlackRooks)   blackOccupancy[pos] = PieceType.Rook;
+        foreach (int pos in BlackKnights) blackOccupancy[pos] = PieceType.Knight;
+        foreach (int pos in BlackBishops) blackOccupancy[pos] = PieceType.Bishop;
+        foreach (int pos in BlackQueens)  blackOccupancy[pos] = PieceType.Queen;
+        foreach (int pos in BlackKings)   blackOccupancy[pos] = PieceType.King;
+
         occupancy = new HashSet<int>();
-        occupancy.UnionWith(WhitePawns);
-        occupancy.UnionWith(WhiteRooks);
-        occupancy.UnionWith(WhiteKnights);
-        occupancy.UnionWith(WhiteBishops);
-        occupancy.UnionWith(WhiteQueens);
-        occupancy.UnionWith(WhiteKings);
-        occupancy.UnionWith(BlackPawns);
-        occupancy.UnionWith(BlackRooks);
-        occupancy.UnionWith(BlackKnights);
-        occupancy.UnionWith(BlackBishops);
-        occupancy.UnionWith(BlackQueens);
-        occupancy.UnionWith(BlackKings);
+        occupancy.UnionWith(whiteOccupancy.Keys);
+        occupancy.UnionWith(blackOccupancy.Keys);
     }
 
-    // Generate moves given the current board state and previous move
+    // Generate candidate moves given the current board state and previous move
     private List<Move> GenerateMoves()
     {
         var moves = new List<Move>();
+
+        ///////////
+        // pawns //
+        ///////////
         if (previous.Type==MoveType.None || !previous.WhiteMove)
         {
+            // en passant
+            if (previous.Moved == PieceType.Pawn && previous.Target == previous.Source-2*nFiles)
+            {
+                if (previous.Target%nFiles != 0 && WhitePawns.Contains(previous.Target-1))
+                {
+                    var enpassant = new Move() {
+                        WhiteMove = true,
+                        CanCastle = previous.CanCastle,
+                        Source = previous.Target - 1,
+                        Target = previous.Target + nFiles,
+                        Type = MoveType.EnPassant,
+                        Moved = PieceType.Pawn,
+                        Captured = PieceType.Pawn
+                    };
+                    moves.Add(enpassant);
+                }
+                if (previous.Target%nFiles != nFiles-1 && WhitePawns.Contains(previous.Target+1))
+                {
+                    var enpassant = new Move() {
+                        WhiteMove = true,
+                        CanCastle = previous.CanCastle,
+                        Source = previous.Target + 1,
+                        Target = previous.Target + nFiles,
+                        Type = MoveType.EnPassant,
+                        Moved = PieceType.Pawn,
+                        Captured = PieceType.Pawn
+                    };
+                    moves.Add(enpassant);
+                }
+            }
             foreach (int pawn in WhitePawns)
             {
+                // push
                 if (pawn/nFiles < nRanks-1 && !occupancy.Contains(pawn+nFiles))
                 {
-                    var push = new Move(true, previous.CanCastle, pawn, pawn+nFiles,
-                                        MoveType.Quiet, PieceType.Pawn, PieceType.None);
+                    var push = new Move() {
+                        WhiteMove = true,
+                        CanCastle = previous.CanCastle,
+                        Source = pawn,
+                        Target = pawn + nFiles,
+                        Type = MoveType.Normal,
+                        Moved = PieceType.Pawn,
+                    };
                     moves.Add(push);
                     if (whitePawnsInit.Contains(pawn) && pawn/nFiles < nRanks-2 && !occupancy.Contains(pawn+2*nFiles))
                     {
-                        var puush = new Move(true, previous.CanCastle, pawn, pawn+2*nFiles,
-                                             MoveType.Quiet, PieceType.Pawn, PieceType.None);
+                        var puush = new Move() {
+                            WhiteMove = true,
+                            CanCastle = previous.CanCastle,
+                            Source = pawn,
+                            Target = pawn + 2*nFiles,
+                            Type = MoveType.Normal,
+                            Moved = PieceType.Pawn,
+                        };
                         moves.Add(puush);
                     }
+                }
+
+                // capture
+                if (pawn%nFiles != 0 && blackOccupancy.ContainsKey(pawn+nFiles-1))
+                {
+                    var capture = new Move() {
+                        WhiteMove = true,
+                        CanCastle = previous.CanCastle,
+                        Source = pawn,
+                        Target = pawn + nFiles-1,
+                        Type = MoveType.Normal,
+                        Moved = PieceType.Pawn,
+                        Captured = blackOccupancy[pawn + nFiles-1]
+                    };
+                    moves.Add(capture);
+                }
+                if (pawn%nFiles != nFiles-1 && blackOccupancy.ContainsKey(pawn+nFiles+1))
+                {
+                    var capture = new Move() {
+                        WhiteMove = true,
+                        CanCastle = previous.CanCastle,
+                        Source = pawn,
+                        Target = pawn + nFiles+1,
+                        Type = MoveType.Normal,
+                        Moved = PieceType.Pawn,
+                        Captured = blackOccupancy[pawn + nFiles+1]
+                    };
+                    moves.Add(capture);
                 }
             }
         }
         else
         {
+            // en passant
+            if (previous.Moved == PieceType.Pawn && previous.Target == previous.Source+2*nFiles)
+            {
+                if (previous.Target%nFiles != 0 && BlackPawns.Contains(previous.Target-1))
+                {
+                    var enpassant = new Move() {
+                        WhiteMove = false,
+                        CanCastle = previous.CanCastle,
+                        Source = previous.Target - 1,
+                        Target = previous.Target - nFiles,
+                        Type = MoveType.EnPassant,
+                        Moved = PieceType.Pawn,
+                        Captured = PieceType.Pawn
+                    };
+                    moves.Add(enpassant);
+                }
+                if (previous.Target%nFiles != nFiles-1 && BlackPawns.Contains(previous.Target+1))
+                {
+                    var enpassant = new Move() {
+                        WhiteMove = false,
+                        CanCastle = previous.CanCastle,
+                        Source = previous.Target + 1,
+                        Target = previous.Target - nFiles,
+                        Type = MoveType.EnPassant,
+                        Moved = PieceType.Pawn,
+                        Captured = PieceType.Pawn
+                    };
+                    moves.Add(enpassant);
+                }
+            }
+            // pawns
             foreach (int pawn in BlackPawns)
             {
+                // push
                 if (pawn/nFiles >= 1 && !occupancy.Contains(pawn-nFiles))
                 {
-                    var push = new Move(false, previous.CanCastle, pawn, pawn-nFiles,
-                                        MoveType.Quiet, PieceType.Pawn, PieceType.None);
+                    var push = new Move() {
+                        WhiteMove = false,
+                        CanCastle = previous.CanCastle,
+                        Source = pawn,
+                        Target = pawn - nFiles,
+                        Type = MoveType.Normal,
+                        Moved = PieceType.Pawn,
+                    };
                     moves.Add(push);
                     if (blackPawnsInit.Contains(pawn) && pawn/nFiles >= 2 && !occupancy.Contains(pawn-2*nFiles))
                     {
-                        var puush = new Move(false, previous.CanCastle, pawn, pawn-2*nFiles,
-                                             MoveType.Quiet, PieceType.Pawn, PieceType.None);
+                        var puush = new Move() {
+                            WhiteMove = false,
+                            CanCastle = previous.CanCastle,
+                            Source = pawn,
+                            Target = pawn - 2*nFiles,
+                            Type = MoveType.Normal,
+                            Moved = PieceType.Pawn,
+                        };
                         moves.Add(puush);
                     }
                 }
+
+                // capture
+                if (pawn%nFiles != 0 && whiteOccupancy.ContainsKey(pawn-nFiles-1))
+                {
+                    var capture = new Move() {
+                        WhiteMove = false,
+                        CanCastle = previous.CanCastle,
+                        Source = pawn,
+                        Target = pawn - nFiles-1,
+                        Type = MoveType.Normal,
+                        Moved = PieceType.Pawn,
+                        Captured = whiteOccupancy[pawn - nFiles-1]
+                    };
+                    moves.Add(capture);
+                }
+                if (pawn%nFiles != nFiles-1 && whiteOccupancy.ContainsKey(pawn-nFiles+1))
+                {
+                    var capture = new Move() {
+                        WhiteMove = false,
+                        CanCastle = previous.CanCastle,
+                        Source = pawn,
+                        Target = pawn - nFiles+1,
+                        Type = MoveType.Normal,
+                        Moved = PieceType.Pawn,
+                        Captured = whiteOccupancy[pawn - nFiles+1]
+                    };
+                    moves.Add(capture);
+                }
             }
         }
+        // check for promotion, now that all pawn moves should be in place
+        int nMoves = moves.Count;
+        for (int i=0; i<nMoves; i++)
+        {
+            Move move = moves[i];
+            if (move.Target/nRanks == (move.WhiteMove? nRanks-1 : 0))
+            {
+                // add possible promotions
+                move.Promotion = PieceType.Rook;
+                moves.Add(move.DeepCopy());
+                move.Promotion = PieceType.Knight;
+                moves.Add(move.DeepCopy());
+                move.Promotion = PieceType.Bishop;
+                moves.Add(move.DeepCopy());
+                // replace existing move with queen promotion
+                move.Promotion = PieceType.Queen;
+            }
+        }
+
+        /////////////
+        // Knights //
+        /////////////
+        foreach (int knight in WhiteKnights)
+        {
+            // TODO:
+        }
         return moves;
+    }
+    private void AddPiece(PieceType type, int pos, bool white)
+    {
+        if (white)
+        {
+            if (type == PieceType.Pawn) WhitePawns.Add(pos);
+            else if (type == PieceType.Rook) WhiteRooks.Add(pos);
+            else if (type == PieceType.Knight) WhiteKnights.Add(pos);
+            else if (type == PieceType.Bishop) WhiteBishops.Add(pos);
+            else if (type == PieceType.Queen) WhiteQueens.Add(pos);
+            else if (type == PieceType.King) WhiteKings.Add(pos);
+            whiteOccupancy.Add(pos, type);
+        }
+        else
+        {
+            if (type == PieceType.Pawn) BlackPawns.Add(pos);
+            else if (type == PieceType.Rook) BlackRooks.Add(pos);
+            else if (type == PieceType.Knight) BlackKnights.Add(pos);
+            else if (type == PieceType.Bishop) BlackBishops.Add(pos);
+            else if (type == PieceType.Queen) BlackQueens.Add(pos);
+            else if (type == PieceType.King) BlackKings.Add(pos);
+            blackOccupancy.Add(pos, type);
+        }
+        occupancy.Add(pos);
+    }
+    private void RemovePiece(PieceType type, int pos, bool white)
+    {
+        if (white)
+        {
+            if (type == PieceType.Pawn) WhitePawns.Remove(pos);
+            else if (type == PieceType.Rook) WhiteRooks.Remove(pos);
+            else if (type == PieceType.Knight) WhiteKnights.Remove(pos);
+            else if (type == PieceType.Bishop) WhiteBishops.Remove(pos);
+            else if (type == PieceType.Queen) WhiteQueens.Remove(pos);
+            else if (type == PieceType.King) WhiteKings.Remove(pos);
+            whiteOccupancy.Remove(pos);
+        }
+        else
+        {
+            if (type == PieceType.Pawn) BlackPawns.Remove(pos);
+            else if (type == PieceType.Rook) BlackRooks.Remove(pos);
+            else if (type == PieceType.Knight) BlackKnights.Remove(pos);
+            else if (type == PieceType.Bishop) BlackBishops.Remove(pos);
+            else if (type == PieceType.Queen) BlackQueens.Remove(pos);
+            else if (type == PieceType.King) BlackKings.Remove(pos);
+            blackOccupancy.Remove(pos);
+        }
+        occupancy.Remove(pos);
     }
     private void PerformMove(Move move)
     {
         if (move.Moved == PieceType.Pawn)
         {
-            if (move.WhiteMove)
+            RemovePiece(PieceType.Pawn, move.Source, move.WhiteMove);
+            if (move.Promotion != PieceType.None)
             {
-                WhitePawns.Remove(move.Source);
-                WhitePawns.Add(move.Target);
+                AddPiece(move.Promotion, move.Target, move.WhiteMove);
             }
             else
             {
-                BlackPawns.Remove(move.Source);
-                BlackPawns.Add(move.Target);
+                AddPiece(PieceType.Pawn, move.Target, move.WhiteMove);
             }
-            occupancy.Remove(move.Source);
-            occupancy.Add(move.Target);
+            if (move.Captured != PieceType.None)
+            {
+                if (move.Type == MoveType.EnPassant)
+                {
+                    RemovePiece(PieceType.Pawn, move.Target-nFiles, !move.WhiteMove);
+                }
+                else
+                {
+                    RemovePiece(move.Captured, move.Target, !move.WhiteMove);
+                }
+            }
             previous = move;
         }
         else
@@ -164,48 +409,44 @@ public class Engine
 
     private string GetAlgebraic(Move move)
     {
-        string str = "";
-        if (move.Moved == PieceType.Pawn)
+        var sb = new StringBuilder();
+        if (move.Type == MoveType.Castle)
         {
-            str += (char)('a'+(move.Source%nFiles));
-            if (move.Type == MoveType.Capture)
+            if (move.Target > move.Source) sb.Append('>');
+            else sb.Append('<');
+        }
+        else if (move.Moved == PieceType.Pawn)
+        {
+            sb.Append((char)('a'+(move.Source%nFiles)));
+            if (move.Captured != PieceType.None)
             {
-                str += 'x' + ('a'+(move.Target%nFiles));
+                sb.Append('x').Append((char)('a'+(move.Target%nFiles)));
             }
-            str += move.Target/nFiles + 1;
+            sb.Append(move.Target/nFiles + 1);
+            if (move.Promotion != PieceType.None)
+            {
+                sb.Append('=');
+                if (move.Promotion == PieceType.Rook) sb.Append('R');
+                else if (move.Promotion == PieceType.Knight) sb.Append('N');
+                else if (move.Promotion == PieceType.Bishop) sb.Append('B');
+                else if (move.Promotion == PieceType.Queen) sb.Append('Q');
+            }
         }
         else
         {
-            if (move.Moved == PieceType.Rook)
-            {
-                str += 'R';
-            }
-            else if (move.Moved == PieceType.Knight)
-            {
-                str += 'N';
-            }
-            else if (move.Moved == PieceType.Bishop)
-            {
-                str += 'B';
-            }
-            else if (move.Moved == PieceType.Queen)
-            {
-                str += 'Q';
-            }
-            else if (move.Moved == PieceType.King)
-            {
-                str += 'J';
-            }
-            // TODO: piece ambiguity
+            if (move.Moved == PieceType.Rook) sb.Append('R');
+            else if (move.Moved == PieceType.Knight) sb.Append('N');
+            else if (move.Moved == PieceType.Bishop) sb.Append('B');
+            else if (move.Moved == PieceType.Queen) sb.Append('Q');
+            else if (move.Moved == PieceType.King) sb.Append('K');
 
-            if (move.Type == MoveType.Capture)
-            {
-                str += 'x';
-            }
-            str += (char)('a'+(move.Target%nFiles));
-            str += move.Target/nFiles + 1;
+            // TODO: Source ambiguity
+            if (move.Captured != PieceType.None) sb.Append('x');
+
+            sb.Append((char)('a'+(move.Target%nFiles)));
+            sb.Append(move.Target/nFiles + 1);
         }
-        return str;
+        return sb.ToString();
     }
 
     public IEnumerable<string> GetMovesAlgebraic()
