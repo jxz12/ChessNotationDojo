@@ -7,12 +7,11 @@ public class GameManager : MonoBehaviour
 {
 	// TODO: options to make invisible/pulse
 	//       flip board
-	//       parse input
 	//       record games to text
 	//       color schemes
 
 	[SerializeField] List<Text> squares; // TODO: change to a class Square and make it any size
-	[SerializeField] Button N, B, R, Q, K, eq;
+	[SerializeField] Button N, B, R, Q, K, x, eq;
 	[SerializeField] List<Button> files;
 	[SerializeField] List<Button> ranks;
 	private Engine thomas;
@@ -55,6 +54,7 @@ public class GameManager : MonoBehaviour
 		Q.interactable = false;
 		K.interactable = false;
 		eq.interactable = false;
+		x.interactable = false;
 		foreach (Button b in files)
 		{
 			b.interactable = false;
@@ -105,6 +105,10 @@ public class GameManager : MonoBehaviour
 			else if (c == '=')
 			{
 				eq.interactable = true;
+			}
+			else if (c == 'x')
+			{
+				x.interactable = true;
 			}
 		}
 	}

@@ -7,12 +7,6 @@ using System.Collections.Generic;
 
 public class Engine
 {
-    public Engine(int ranks=8, int files=8)
-    {
-        nRanks = ranks;
-        nFiles = files;
-    }
-
     public static int nRanks = 8;
     public static int nFiles = 8;
     private Move previous { get; set; } = null;
@@ -35,44 +29,55 @@ public class Engine
     // a Move plus the board state is all the info needed for move generation
     private class Move
     {
-        public bool whiteMove;
+        public bool WhiteMove { get; private set; }
+        public int Source { get; private set; }
+        public int Target { get; private set; }
+        public MoveType Type { get; private set; }
+        public PieceType Moved { get; private set; }
+        public PieceType Captured { get; private set; } // also used for promotion
 
-        public enum PieceType : byte { Pawn, Rook, Knight, Bishop, Queen, King };
-        public PieceType Piece { get; set; }
-        public int Source { get; set; }
-        public int Target { get; set; }
-
-        public enum MoveType : byte { Quiet, Capture, Check, Castle, EnPassant };
-        public MoveType Type { get; set; }
-        public PieceType Promotion { get; set; }
-
-        public string Algebraic {
-            get
-            {
-                // TODO: other piece types and stuff
-                return (char)('a'+(Source%nFiles)) + "" + ((Target/nFiles)+1);
-            }
+        public Move(bool whiteMove, int source, int target, MoveType type, PieceType moved, PieceType captured)
+        {
+            WhiteMove = whiteMove;
+            Source = source;
+            Target = target;
+            Type = type;
+            Moved = moved;
+            Captured = captured;
         }
     }
+    public enum MoveType : byte { Quiet, Capture, Check, Castle, EnPassant };
+    public enum PieceType : byte { Pawn, Rook, Knight, Bishop, Queen, King };
+
+
+    // used for checking if double push available
+    private HashSet<int> whitePawnsInit, blackPawnsInit;
+    public Engine(int ranks=8, int files=8)
+    {
+        nRanks = ranks;
+        nFiles = files;
+        whitePawnsInit = new HashSet<int>(WhitePawns);
+        blackPawnsInit = new HashSet<int>(BlackPawns);
+    }
+
 
     // Generate moves given the current board state and previous move
     private List<Move> GenerateMoves()
     {
         var moves = new List<Move>();
-        if (previous == null || !previous.whiteMove)
+        if (previous == null || !previous.WhiteMove)
         {
             foreach (int pawn in WhitePawns)
             {
                 if (pawn / nFiles < nRanks-1)
                 {
-                    var newMove = new Move();
-                    newMove.whiteMove = true;
-                    newMove.Piece = Move.PieceType.Pawn;
-                    newMove.Source = pawn;
-                    newMove.Target = pawn + nFiles;
-                    newMove.Type = Move.MoveType.Quiet;
-                    // newMove.promotion = Move.PieceType.Pawn;
-                    moves.Add(newMove);
+                    var push = new Move(true, pawn, pawn+nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                    moves.Add(push);
+                    if (whitePawnsInit.Contains(pawn))
+                    {
+                        var puush = new Move(true, pawn, pawn+2*nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                        moves.Add(puush);
+                    }
                 }
             }
         }
@@ -82,14 +87,14 @@ public class Engine
             {
                 if (pawn / nFiles > 0)
                 {
-                    var newMove = new Move();
-                    newMove.whiteMove = false;
-                    newMove.Piece = Move.PieceType.Pawn;
-                    newMove.Source = pawn;
-                    newMove.Target = pawn - nFiles;
-                    newMove.Type = Move.MoveType.Quiet;
-                    // newMove.promotion = Move.PieceType.Pawn;
-                    moves.Add(newMove);
+                    UnityEngine.Debug.Log("hello");
+                    var push = new Move(false, pawn, pawn-nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                    moves.Add(push);
+                    if (blackPawnsInit.Contains(pawn))
+                    {
+                        var puush = new Move(false, pawn, pawn-2*nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                        moves.Add(puush);
+                    }
                 }
             }
         }
@@ -97,9 +102,9 @@ public class Engine
     }
     private void PerformMove(Move move)
     {
-        if (move.Piece == Move.PieceType.Pawn)
+        if (move.Moved == PieceType.Pawn)
         {
-            if (move.whiteMove)
+            if (move.WhiteMove)
             {
                 WhitePawns.Remove(move.Source);
                 WhitePawns.Add(move.Target);
@@ -116,19 +121,68 @@ public class Engine
             throw new NotImplementedException();
         }
     }
+    private void UndoMove(Move move)
+    {
+        // TODO:
+    }
 
 
 
     ///////////////////////////////////
     // for interface from the outside
 
+    private string GetAlgebraic(Move move)
+    {
+        string str = "";
+        if (move.Moved == PieceType.Pawn)
+        {
+            str += (char)('a'+(move.Source%nFiles));
+            if (move.Type == MoveType.Capture)
+            {
+                str += 'x' + ('a'+(move.Target%nFiles));
+            }
+            str += move.Target/nFiles + 1;
+        }
+        else
+        {
+            if (move.Moved == PieceType.Rook)
+            {
+                str += 'R';
+            }
+            else if (move.Moved == PieceType.Knight)
+            {
+                str += 'N';
+            }
+            else if (move.Moved == PieceType.Bishop)
+            {
+                str += 'B';
+            }
+            else if (move.Moved == PieceType.Queen)
+            {
+                str += 'Q';
+            }
+            else if (move.Moved == PieceType.King)
+            {
+                str += 'J';
+            }
+            // TODO: piece ambiguity
+
+            if (move.Type == MoveType.Capture)
+            {
+                str += 'x';
+            }
+            str += (char)('a'+(move.Target%nFiles));
+            str += move.Target/nFiles + 1;
+        }
+        return str;
+    }
+
     public IEnumerable<string> GetMovesAlgebraic()
     {
         var moves = GenerateMoves();
-        // UnityEngine.Debug.Log(moves.Count);
         foreach (Move move in moves)
         {
-            yield return move.Algebraic;
+            yield return GetAlgebraic(move);
         }
     }
 
@@ -137,10 +191,15 @@ public class Engine
         var moves = GenerateMoves();
         foreach (Move move in moves)
         {
-            if (move.Algebraic == todo)
+            if (GetAlgebraic(move) == todo)
             {
                 PerformMove(move);
+                return;
             }
         }
+    }
+    public void UndoLastMove()
+    {
+        // TODO:
     }
 }
