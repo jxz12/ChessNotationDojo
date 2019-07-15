@@ -163,28 +163,34 @@ public class GameManager : MonoBehaviour
             square.text = "";
         }
     }
-    void DisplayPiece(IEnumerable<int> positions, string letter, Color colour)
+    void DisplayPiece(int position, string letter, Color colour)
+    {
+		squares[position].color = colour;
+		squares[position].text = letter;
+    }
+    void DisplayPieces(IEnumerable<int> positions, string letter, Color colour)
     {
         foreach (int i in positions)
         {
-            squares[i].color = colour;
-            squares[i].text = letter;
+			squares[i].color = colour;
+			squares[i].text = letter;
         }
     }
     void Display()
     {
         ClearBoard();
-        DisplayPiece(thomas.WhitePawns,   "♟", Color.white);
-        DisplayPiece(thomas.WhiteRooks,   "♜", Color.white);
-        DisplayPiece(thomas.WhiteKnights, "♞", Color.white);
-        DisplayPiece(thomas.WhiteBishops, "♝", Color.white);
-        DisplayPiece(thomas.WhiteQueens,  "♛", Color.white);
-        DisplayPiece(thomas.WhiteKings,   "♚", Color.white);
-        DisplayPiece(thomas.BlackPawns,   "♟", Color.black);
-        DisplayPiece(thomas.BlackRooks,   "♜", Color.black);
-        DisplayPiece(thomas.BlackKnights, "♞", Color.black);
-        DisplayPiece(thomas.BlackBishops, "♝", Color.black);
-        DisplayPiece(thomas.BlackQueens,  "♛", Color.black);
-        DisplayPiece(thomas.BlackKings,   "♚", Color.black);
+        DisplayPieces(thomas.WhitePawns,   "♟", Color.white);
+        DisplayPieces(thomas.WhiteRooks,   "♜", Color.white);
+        DisplayPieces(thomas.WhiteKnights, "♞", Color.white);
+        DisplayPieces(thomas.WhiteBishops, "♝", Color.white);
+        DisplayPieces(thomas.WhiteQueens,  "♛", Color.white);
+        DisplayPiece(thomas.WhiteKing,     "♚", Color.white);
+
+        DisplayPieces(thomas.BlackPawns,   "♟", Color.black);
+        DisplayPieces(thomas.BlackRooks,   "♜", Color.black);
+        DisplayPieces(thomas.BlackKnights, "♞", Color.black);
+        DisplayPieces(thomas.BlackBishops, "♝", Color.black);
+        DisplayPieces(thomas.BlackQueens,  "♛", Color.black);
+        DisplayPiece(thomas.BlackKing,     "♚", Color.black);
     }
 }

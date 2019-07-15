@@ -17,14 +17,14 @@ public class Engine
     public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int> { 1,6 };
     public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int> { 2,5 };
     public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int> { 3 };
-    public HashSet<int> WhiteKings   { get; private set; } = new HashSet<int> { 4 };
+    public int WhiteKing             { get; private set; } =                    4;
 
     public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int> { 48,49,50,51,52,53,54,55 };
     public HashSet<int> BlackRooks   { get; private set; } = new HashSet<int> { 56,63 };
     public HashSet<int> BlackKnights { get; private set; } = new HashSet<int> { 57,62 };
     public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> { 58,61 };
     public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 59 };
-    public HashSet<int> BlackKings   { get; private set; } = new HashSet<int> { 60 };
+    public int BlackKing             { get; private set; } =                    60;
     
     // allow for empty moves for analysis
     public enum MoveType : byte { None, Normal, Castle, EnPassant };
@@ -89,18 +89,32 @@ public class Engine
         foreach (int pos in WhiteKnights) whiteOccupancy[pos] = PieceType.Knight;
         foreach (int pos in WhiteBishops) whiteOccupancy[pos] = PieceType.Bishop;
         foreach (int pos in WhiteQueens)  whiteOccupancy[pos] = PieceType.Queen;
-        foreach (int pos in WhiteKings)   whiteOccupancy[pos] = PieceType.King;
+        whiteOccupancy[WhiteKing] = PieceType.King;
+        
         blackOccupancy = new Dictionary<int, PieceType>();
         foreach (int pos in BlackPawns)   blackOccupancy[pos] = PieceType.Pawn;
         foreach (int pos in BlackRooks)   blackOccupancy[pos] = PieceType.Rook;
         foreach (int pos in BlackKnights) blackOccupancy[pos] = PieceType.Knight;
         foreach (int pos in BlackBishops) blackOccupancy[pos] = PieceType.Bishop;
         foreach (int pos in BlackQueens)  blackOccupancy[pos] = PieceType.Queen;
-        foreach (int pos in BlackKings)   blackOccupancy[pos] = PieceType.King;
+        blackOccupancy[BlackKing] = PieceType.King;
 
         occupancy = new HashSet<int>();
         occupancy.UnionWith(whiteOccupancy.Keys);
         occupancy.UnionWith(blackOccupancy.Keys);
+    }
+
+    private int GetFile(int pos)
+    {
+        return pos % nFiles;
+    }
+    private int GetRank(int pos)
+    {
+        return pos / nFiles;
+    }
+    private int GetPos(int file, int rank)
+    {
+        return rank * nFiles + file;
     }
 
     // Generate candidate moves given the current board state and previous move
@@ -312,14 +326,61 @@ public class Engine
         /////////////
         // Knights //
         /////////////
-        foreach (int knight in WhiteKnights)
+
+        // for convenience, but might be slow
+        Action<int, int, int, bool> TryAddKnightMove = (knight, rankHop, fileHop, white)=>
         {
-            // TODO:
+            int startFile = GetFile(knight);
+            int startRank = GetRank(knight);
+            int targetFile = startFile + fileHop;
+            int targetRank = startRank + rankHop;
+            int targetPos = GetPos(targetFile, targetRank);
+            bool blocked = white? whiteOccupancy.ContainsKey(targetPos)
+                                : blackOccupancy.ContainsKey(targetPos);
+
+            if (targetRank >= 0 && targetRank <= nRanks-1 &&
+                targetFile >= 0 && targetFile <= nFiles-1 &&
+                !blocked)
+            {
+                bool capture = white? blackOccupancy.ContainsKey(targetPos)
+                                    : whiteOccupancy.ContainsKey(targetPos);
+                var move = new Move() {
+                    WhiteMove = white,
+                    CanCastle = previous.CanCastle,
+                    Source = knight,
+                    Target = targetPos,
+                    Type = MoveType.Normal,
+                    Moved = PieceType.Knight,
+                    Captured = capture? (white? blackOccupancy[targetPos]
+                                            : whiteOccupancy[targetPos])
+                                      : PieceType.None,
+                };
+                moves.Add(move);
+            }
+        };
+
+        var knights = previous.WhiteMove? BlackKnights : WhiteKnights;
+        foreach (int knight in knights)
+        {
+            TryAddKnightMove(knight, -2,  1, !previous.WhiteMove);
+            TryAddKnightMove(knight, -1,  2, !previous.WhiteMove);
+            TryAddKnightMove(knight,  1,  2, !previous.WhiteMove);
+            TryAddKnightMove(knight,  2,  1, !previous.WhiteMove);
+            TryAddKnightMove(knight,  2, -1, !previous.WhiteMove);
+            TryAddKnightMove(knight,  1, -2, !previous.WhiteMove);
+            TryAddKnightMove(knight, -1, -2, !previous.WhiteMove);
+            TryAddKnightMove(knight, -2, -1, !previous.WhiteMove);
         }
         return moves;
     }
     private void AddPiece(PieceType type, int pos, bool white)
     {
+        if (occupancy.Contains(pos))
+            throw new Exception("occupado");
+        if (type == PieceType.King)
+            throw new Exception("2019");
+
+        occupancy.Add(pos);
         if (white)
         {
             if (type == PieceType.Pawn) WhitePawns.Add(pos);
@@ -327,7 +388,6 @@ public class Engine
             else if (type == PieceType.Knight) WhiteKnights.Add(pos);
             else if (type == PieceType.Bishop) WhiteBishops.Add(pos);
             else if (type == PieceType.Queen) WhiteQueens.Add(pos);
-            else if (type == PieceType.King) WhiteKings.Add(pos);
             whiteOccupancy.Add(pos, type);
         }
         else
@@ -337,13 +397,17 @@ public class Engine
             else if (type == PieceType.Knight) BlackKnights.Add(pos);
             else if (type == PieceType.Bishop) BlackBishops.Add(pos);
             else if (type == PieceType.Queen) BlackQueens.Add(pos);
-            else if (type == PieceType.King) BlackKings.Add(pos);
             blackOccupancy.Add(pos, type);
         }
-        occupancy.Add(pos);
     }
     private void RemovePiece(PieceType type, int pos, bool white)
     {
+        if (!occupancy.Contains(pos))
+            throw new Exception("no piece here");
+        if (type == PieceType.King)
+            throw new Exception("coup!");
+
+        occupancy.Remove(pos);
         if (white)
         {
             if (type == PieceType.Pawn) WhitePawns.Remove(pos);
@@ -351,7 +415,6 @@ public class Engine
             else if (type == PieceType.Knight) WhiteKnights.Remove(pos);
             else if (type == PieceType.Bishop) WhiteBishops.Remove(pos);
             else if (type == PieceType.Queen) WhiteQueens.Remove(pos);
-            else if (type == PieceType.King) WhiteKings.Remove(pos);
             whiteOccupancy.Remove(pos);
         }
         else
@@ -361,24 +424,31 @@ public class Engine
             else if (type == PieceType.Knight) BlackKnights.Remove(pos);
             else if (type == PieceType.Bishop) BlackBishops.Remove(pos);
             else if (type == PieceType.Queen) BlackQueens.Remove(pos);
-            else if (type == PieceType.King) BlackKings.Remove(pos);
             blackOccupancy.Remove(pos);
         }
-        occupancy.Remove(pos);
+    }
+    private void MoveKing(int pos, bool white)
+    {
+        if (occupancy.Contains(pos))
+            throw new Exception("occupado");
+
+        if (white)
+        {
+            occupancy.Remove(WhiteKing);
+            WhiteKing = pos;
+        }
+        else
+        {
+            occupancy.Remove(BlackKing);
+            BlackKing = pos;
+        }
+        occupancy.Add(pos);
     }
     private void PerformMove(Move move)
     {
         if (move.Moved == PieceType.Pawn)
         {
             RemovePiece(PieceType.Pawn, move.Source, move.WhiteMove);
-            if (move.Promotion != PieceType.None)
-            {
-                AddPiece(move.Promotion, move.Target, move.WhiteMove);
-            }
-            else
-            {
-                AddPiece(PieceType.Pawn, move.Target, move.WhiteMove);
-            }
             if (move.Captured != PieceType.None)
             {
                 if (move.Type == MoveType.EnPassant)
@@ -390,12 +460,29 @@ public class Engine
                     RemovePiece(move.Captured, move.Target, !move.WhiteMove);
                 }
             }
-            previous = move;
+            if (move.Promotion != PieceType.None)
+            {
+                AddPiece(move.Promotion, move.Target, move.WhiteMove);
+            }
+            else
+            {
+                AddPiece(PieceType.Pawn, move.Target, move.WhiteMove);
+            }
+        }
+        else if (move.Moved == PieceType.Knight)
+        {
+            RemovePiece(PieceType.Knight, move.Source, move.WhiteMove);
+            if (move.Captured != PieceType.None)
+            {
+                RemovePiece(move.Captured, move.Target, !move.WhiteMove);
+            }
+            AddPiece(PieceType.Knight, move.Target, move.WhiteMove);
         }
         else
         {
             throw new NotImplementedException();
         }
+        previous = move;
     }
     private void UndoMove(Move move)
     {

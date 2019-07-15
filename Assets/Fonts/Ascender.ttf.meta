@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: d8cb224429af18042a378e7875ed2fd6
+guid: 17861766ff25f430695cfb4ac30e39d7
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -8,9 +8,9 @@ TrueTypeFontImporter:
   characterSpacing: 0
   characterPadding: 1
   includeFontData: 1
-  fontName: Chrysanthi Unicode
+  fontName: AscenderUniW01-Regular
   fontNames:
-  - Chrysanthi Unicode
+  - AscenderUniW01-Regular
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 0
