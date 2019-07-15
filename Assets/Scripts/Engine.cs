@@ -100,7 +100,7 @@ public class Engine
                     var push = new Move(true, previous.CanCastle, pawn, pawn+nFiles,
                                         MoveType.Quiet, PieceType.Pawn, PieceType.None);
                     moves.Add(push);
-                    if (whitePawnsInit.Contains(pawn) && !occupancy.Contains(pawn+2*nFiles))
+                    if (whitePawnsInit.Contains(pawn) && pawn/nFiles < nRanks-2 && !occupancy.Contains(pawn+2*nFiles))
                     {
                         var puush = new Move(true, previous.CanCastle, pawn, pawn+2*nFiles,
                                              MoveType.Quiet, PieceType.Pawn, PieceType.None);
@@ -113,12 +113,12 @@ public class Engine
         {
             foreach (int pawn in BlackPawns)
             {
-                if (pawn/nFiles > 0 && !occupancy.Contains(pawn-nFiles))
+                if (pawn/nFiles >= 1 && !occupancy.Contains(pawn-nFiles))
                 {
                     var push = new Move(false, previous.CanCastle, pawn, pawn-nFiles,
                                         MoveType.Quiet, PieceType.Pawn, PieceType.None);
                     moves.Add(push);
-                    if (blackPawnsInit.Contains(pawn) && !occupancy.Contains(pawn-2*nFiles))
+                    if (blackPawnsInit.Contains(pawn) && pawn/nFiles >= 2 && !occupancy.Contains(pawn-2*nFiles))
                     {
                         var puush = new Move(false, previous.CanCastle, pawn, pawn-2*nFiles,
                                              MoveType.Quiet, PieceType.Pawn, PieceType.None);
