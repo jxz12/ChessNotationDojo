@@ -24,21 +24,26 @@ public class Engine
     public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> { 58,61 };
     public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 59 };
     public HashSet<int> BlackKings   { get; private set; } = new HashSet<int> { 60 };
-
+    
+    
+    public enum MoveType : byte { Quiet, Capture, Castle, EnPassant };
+    public enum PieceType : byte { None, Pawn, Rook, Knight, Bishop, Queen, King };
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
     private class Move
     {
         public bool WhiteMove { get; private set; }
+        public bool CanCastle { get; private set;
         public int Source { get; private set; }
         public int Target { get; private set; }
         public MoveType Type { get; private set; }
         public PieceType Moved { get; private set; }
         public PieceType Captured { get; private set; } // also used for promotion
 
-        public Move(bool whiteMove, int source, int target, MoveType type, PieceType moved, PieceType captured)
+        public Move(bool whiteMove, bool canCastle, int source, int target, MoveType type, PieceType moved, PieceType captured)
         {
             WhiteMove = whiteMove;
+            CanCastle = canCastle;
             Source = source;
             Target = target;
             Type = type;
@@ -46,8 +51,6 @@ public class Engine
             Captured = captured;
         }
     }
-    public enum MoveType : byte { Quiet, Capture, Check, Castle, EnPassant };
-    public enum PieceType : byte { Pawn, Rook, Knight, Bishop, Queen, King };
 
 
     // used for checking if double push available
@@ -71,11 +74,11 @@ public class Engine
             {
                 if (pawn / nFiles < nRanks-1)
                 {
-                    var push = new Move(true, pawn, pawn+nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                    var push = new Move(true, pawn, pawn+nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.None);
                     moves.Add(push);
                     if (whitePawnsInit.Contains(pawn))
                     {
-                        var puush = new Move(true, pawn, pawn+2*nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                        var puush = new Move(true, pawn, pawn+2*nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.None);
                         moves.Add(puush);
                     }
                 }
@@ -88,11 +91,11 @@ public class Engine
                 if (pawn / nFiles > 0)
                 {
                     UnityEngine.Debug.Log("hello");
-                    var push = new Move(false, pawn, pawn-nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                    var push = new Move(false, pawn, pawn-nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.None);
                     moves.Add(push);
                     if (blackPawnsInit.Contains(pawn))
                     {
-                        var puush = new Move(false, pawn, pawn-2*nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.Pawn);
+                        var puush = new Move(false, pawn, pawn-2*nFiles, MoveType.Quiet, PieceType.Pawn, PieceType.None);
                         moves.Add(puush);
                     }
                 }
