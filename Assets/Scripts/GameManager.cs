@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,6 +15,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] Button O_O, O_O_O;
     [SerializeField] List<Button> files;
     [SerializeField] List<Button> ranks;
+
+	List<string> moves = new List<string>();
+	[SerializeField] string moveSheet;
+
     private Engine thomas;
     void Awake()
     {
@@ -108,12 +113,32 @@ public class GameManager : MonoBehaviour
         {
             // print(candidate);
             thomas.PerformMoveAlgebraic(candidate);
+			moves.Add(candidate);
+			WriteMoveSheet();
             candidate = "";
             allCandidates = new HashSet<string>(thomas.GetMovesAlgebraic());
             Display();
         }
         ShowPossibleChars();
     }
+	void WriteMoveSheet()
+	{
+		if (moves.Count == 0) moveSheet = "";
+
+		var sb = new StringBuilder(moves[0]);
+		for (int i=1; i<moves.Count; i++)
+		{
+			if (i%2 == 1)
+			{
+				sb.Append(' ').Append(moves[i]);
+			}
+			else
+			{
+				sb.Append(';').Append(moves[i]);
+			}
+		}
+		moveSheet = sb.ToString();
+	}
     void UndoChar()
     {
         if (candidate.Length == 0)

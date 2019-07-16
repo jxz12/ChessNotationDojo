@@ -184,7 +184,7 @@ public partial class Engine
             {
                 if (move.Type == MoveType.EnPassant)
                 {
-                    RemovePiece(PieceType.Pawn, move.Target-nFiles, !move.WhiteMove);
+                    RemovePiece(PieceType.Pawn, previous.Target, !move.WhiteMove);
                 }
                 else
                 {
@@ -219,7 +219,6 @@ public partial class Engine
     {
         // TODO:
     }
-
 
 
     ///////////////////////////////////
