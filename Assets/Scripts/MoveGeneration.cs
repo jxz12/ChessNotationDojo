@@ -21,6 +21,7 @@ public partial class Engine
     {
         var moves = new List<Move>();
         bool whiteToMove = !previous.WhiteMove;
+        var enemyOccupancy = whiteToMove? blackOccupancy : whiteOccupancy;
 
         ///////////
         // pawns //
@@ -69,7 +70,7 @@ public partial class Engine
         {
             // single
             int pushedRank = GetRank(pawn + push);
-            if (pushedRank >= 0 && pushedRank <= nRanks &&
+            if (pushedRank >= 0 && pushedRank < nRanks &&
                 !occupancy.Contains(pawn+push))
             {
                 var move = new Move() {
@@ -86,7 +87,7 @@ public partial class Engine
                 var initPawns = whiteToMove? whitePawnsInit : blackPawnsInit;
                 pushedRank = GetRank(pawn + 2*push);
                 if (initPawns.Contains(pawn) &&
-                    pushedRank >= 0 && pushedRank <= nRanks &&
+                    pushedRank >= 0 && pushedRank < nRanks &&
                     !occupancy.Contains(pawn+2*push))
                 {
                     var puush = new Move() {
@@ -100,8 +101,6 @@ public partial class Engine
                     moves.Add(puush);
                 }
             }
-
-            var enemyOccupancy = whiteToMove? blackOccupancy : whiteOccupancy;
 
             // capture left
             int leftCapture = push-1;
@@ -167,15 +166,13 @@ public partial class Engine
             int targetFile = startFile + fileHop;
             int targetRank = startRank + rankHop;
             int targetPos = GetPos(targetFile, targetRank);
-            bool blocked = whiteToMove? whiteOccupancy.ContainsKey(targetPos)
-                                      : blackOccupancy.ContainsKey(targetPos);
+            bool blocked = occupancy.Contains(targetPos);
+            bool capture = enemyOccupancy.ContainsKey(targetPos);
 
-            if (targetRank >= 0 && targetRank <= nRanks-1 &&
-                targetFile >= 0 && targetFile <= nFiles-1 &&
-                !blocked)
+            if (targetRank >= 0 && targetRank < nRanks &&
+                targetFile >= 0 && targetFile < nFiles &&
+                (!blocked || capture))
             {
-                bool capture = whiteToMove? blackOccupancy.ContainsKey(targetPos)
-                                          : whiteOccupancy.ContainsKey(targetPos);
                 var move = new Move() {
                     WhiteMove = whiteToMove,
                     CanCastle = previous.CanCastle,
@@ -183,32 +180,85 @@ public partial class Engine
                     Target = targetPos,
                     Type = MoveType.Normal,
                     Moved = PieceType.Knight,
-                    Captured = capture? (whiteToMove? blackOccupancy[targetPos]
-                                                    : whiteOccupancy[targetPos])
+                    Captured = capture? enemyOccupancy[targetPos]
                                       : PieceType.None,
                 };
                 moves.Add(move);
             }
         };
 
-        var knights = previous.WhiteMove? BlackKnights : WhiteKnights;
+        var knights = whiteToMove? WhiteKnights : BlackKnights;
         foreach (int knight in knights)
         {
-            TryAddKnightMove(knight, -2,  1);
-            TryAddKnightMove(knight, -1,  2);
             TryAddKnightMove(knight,  1,  2);
             TryAddKnightMove(knight,  2,  1);
             TryAddKnightMove(knight,  2, -1);
             TryAddKnightMove(knight,  1, -2);
             TryAddKnightMove(knight, -1, -2);
             TryAddKnightMove(knight, -2, -1);
+            TryAddKnightMove(knight, -2,  1);
+            TryAddKnightMove(knight, -1,  2);
         }
 
         /////////////
         // bishops //
         /////////////
+        Action<int, PieceType, int, int> TrySlidePiece = (slider, sliderType, fileSlide, rankSlide)=>
+        {
+            int startFile = GetFile(slider);
+            int startRank = GetRank(slider);
+            int targetFile = startFile + fileSlide;
+            int targetRank = startRank + rankSlide;
+            int targetPos = GetPos(targetFile, targetRank);
+            bool blocked = occupancy.Contains(targetPos);
 
+            while (targetRank >= 0 && targetRank < nRanks &&
+                   targetFile >= 0 && targetFile < nFiles &&
+                   !blocked)
+            {
+                var move = new Move() {
+                    WhiteMove = whiteToMove,
+                    CanCastle = previous.CanCastle,
+                    Source = slider,
+                    Target = targetPos,
+                    Type = MoveType.Normal,
+                    Moved = sliderType,
+                    Captured = PieceType.None
+                };
+                moves.Add(move);
 
+                targetFile += fileSlide;
+                targetRank += rankSlide;
+                targetPos = GetPos(targetFile, targetRank);
+                blocked = occupancy.Contains(targetPos);
+            }
+
+            bool capture = enemyOccupancy.ContainsKey(targetPos);
+            if (targetRank >= 0 && targetRank < nRanks &&
+                targetFile >= 0 && targetFile < nFiles &&
+                capture)
+            {
+                var move = new Move() {
+                    WhiteMove = whiteToMove,
+                    CanCastle = previous.CanCastle,
+                    Source = slider,
+                    Target = targetPos,
+                    Type = MoveType.Normal,
+                    Moved = sliderType,
+                    Captured = enemyOccupancy[targetPos]
+                };
+                moves.Add(move);
+            }
+        };
+
+        var bishops = whiteToMove? WhiteBishops : BlackBishops;
+        foreach (int bishop in bishops)
+        {
+            TrySlidePiece(bishop, PieceType.Bishop,  1,  1);
+            TrySlidePiece(bishop, PieceType.Bishop,  1, -1);
+            TrySlidePiece(bishop, PieceType.Bishop, -1, -1);
+            TrySlidePiece(bishop, PieceType.Bishop, -1,  1);
+        }
 
         return moves;
     }

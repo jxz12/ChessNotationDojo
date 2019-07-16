@@ -179,7 +179,6 @@ public partial class Engine
     {
         if (move.Moved == PieceType.Pawn)
         {
-            RemovePiece(PieceType.Pawn, move.Source, move.WhiteMove);
             if (move.Captured != PieceType.None)
             {
                 if (move.Type == MoveType.EnPassant)
@@ -191,23 +190,33 @@ public partial class Engine
                     RemovePiece(move.Captured, move.Target, !move.WhiteMove);
                 }
             }
-            if (move.Promotion != PieceType.None)
+            RemovePiece(PieceType.Pawn, move.Source, move.WhiteMove);
+            if (move.Promotion == PieceType.None)
             {
-                AddPiece(move.Promotion, move.Target, move.WhiteMove);
+                AddPiece(PieceType.Pawn, move.Target, move.WhiteMove);
             }
             else
             {
-                AddPiece(PieceType.Pawn, move.Target, move.WhiteMove);
+                AddPiece(move.Promotion, move.Target, move.WhiteMove);
             }
         }
         else if (move.Moved == PieceType.Knight)
         {
-            RemovePiece(PieceType.Knight, move.Source, move.WhiteMove);
             if (move.Captured != PieceType.None)
             {
                 RemovePiece(move.Captured, move.Target, !move.WhiteMove);
             }
+            RemovePiece(PieceType.Knight, move.Source, move.WhiteMove);
             AddPiece(PieceType.Knight, move.Target, move.WhiteMove);
+        }
+        else if (move.Moved == PieceType.Bishop)
+        {
+            if (move.Captured != PieceType.None)
+            {
+                RemovePiece(move.Captured, move.Target, !move.WhiteMove);
+            }
+            RemovePiece(PieceType.Bishop, move.Source, move.WhiteMove);
+            AddPiece(PieceType.Bishop, move.Target, move.WhiteMove);
         }
         else
         {
