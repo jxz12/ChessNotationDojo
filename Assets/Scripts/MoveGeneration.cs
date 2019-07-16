@@ -40,7 +40,6 @@ public partial class Engine
             {
                 var enpassant = new Move() {
                     WhiteMove = whiteToMove,
-                    CanCastle = previous.CanCastle,
                     Source = previous.Target - 1,
                     Target = previous.Target + push,
                     Type = MoveType.EnPassant,
@@ -55,7 +54,6 @@ public partial class Engine
             {
                 var enpassant = new Move() {
                     WhiteMove = true,
-                    CanCastle = previous.CanCastle,
                     Source = previous.Target + 1,
                     Target = previous.Target + push,
                     Type = MoveType.EnPassant,
@@ -75,7 +73,6 @@ public partial class Engine
             {
                 var move = new Move() {
                     WhiteMove = whiteToMove,
-                    CanCastle = previous.CanCastle,
                     Source = pawn,
                     Target = pawn + push,
                     Type = MoveType.Normal,
@@ -92,7 +89,6 @@ public partial class Engine
                 {
                     var puush = new Move() {
                         WhiteMove = whiteToMove,
-                        CanCastle = previous.CanCastle,
                         Source = pawn,
                         Target = pawn + 2*push,
                         Type = MoveType.Normal,
@@ -109,7 +105,6 @@ public partial class Engine
             {
                 var move = new Move() {
                     WhiteMove = whiteToMove,
-                    CanCastle = previous.CanCastle,
                     Source = pawn,
                     Target = pawn + leftCapture,
                     Type = MoveType.Normal,
@@ -125,7 +120,6 @@ public partial class Engine
             {
                 var move = new Move() {
                     WhiteMove = whiteToMove,
-                    CanCastle = previous.CanCastle,
                     Source = pawn,
                     Target = pawn + rightCapture,
                     Type = MoveType.Normal,
@@ -155,10 +149,87 @@ public partial class Engine
             }
         }
 
+        ////////////////////////////
+        // bishops, rooks, queens //
+        ////////////////////////////
+        Action<int, PieceType, int, int> TrySlidePiece = (slider, sliderType, fileSlide, rankSlide)=>
+        {
+            int startFile = GetFile(slider);
+            int startRank = GetRank(slider);
+            int targetFile = startFile + fileSlide;
+            int targetRank = startRank + rankSlide;
+            int targetPos = GetPos(targetFile, targetRank);
+            bool blocked = occupancy.Contains(targetPos);
+
+            while (targetRank >= 0 && targetRank < nRanks &&
+                   targetFile >= 0 && targetFile < nFiles &&
+                   !blocked)
+            {
+                var move = new Move() {
+                    WhiteMove = whiteToMove,
+                    Source = slider,
+                    Target = targetPos,
+                    Type = MoveType.Normal,
+                    Moved = sliderType,
+                    Captured = PieceType.None
+                };
+                moves.Add(move);
+
+                targetFile += fileSlide;
+                targetRank += rankSlide;
+                targetPos = GetPos(targetFile, targetRank);
+                blocked = occupancy.Contains(targetPos);
+            }
+
+            bool capture = enemyOccupancy.ContainsKey(targetPos);
+            if (targetRank >= 0 && targetRank < nRanks &&
+                targetFile >= 0 && targetFile < nFiles &&
+                capture)
+            {
+                var move = new Move() {
+                    WhiteMove = whiteToMove,
+                    Source = slider,
+                    Target = targetPos,
+                    Type = MoveType.Normal,
+                    Moved = sliderType,
+                    Captured = enemyOccupancy[targetPos]
+                };
+                moves.Add(move);
+            }
+        };
+
+        var bishops = whiteToMove? WhiteBishops : BlackBishops;
+        foreach (int bishop in bishops)
+        {
+            TrySlidePiece(bishop, PieceType.Bishop,  1,  1);
+            TrySlidePiece(bishop, PieceType.Bishop,  1, -1);
+            TrySlidePiece(bishop, PieceType.Bishop, -1, -1);
+            TrySlidePiece(bishop, PieceType.Bishop, -1,  1);
+        }
+        var rooks = whiteToMove? WhiteRooks : BlackRooks;
+        foreach (int rook in rooks)
+        {
+            TrySlidePiece(rook, PieceType.Rook,  0,  1);
+            TrySlidePiece(rook, PieceType.Rook,  1,  0);
+            TrySlidePiece(rook, PieceType.Rook,  0, -1);
+            TrySlidePiece(rook, PieceType.Rook, -1,  0);
+        }
+        var queens = whiteToMove? WhiteQueens : BlackQueens;
+        foreach (int queen in queens)
+        {
+            TrySlidePiece(queen, PieceType.Queen,  1,  1);
+            TrySlidePiece(queen, PieceType.Queen,  1, -1);
+            TrySlidePiece(queen, PieceType.Queen, -1, -1);
+            TrySlidePiece(queen, PieceType.Queen, -1,  1);
+            TrySlidePiece(queen, PieceType.Queen,  0,  1);
+            TrySlidePiece(queen, PieceType.Queen,  1,  0);
+            TrySlidePiece(queen, PieceType.Queen,  0, -1);
+            TrySlidePiece(queen, PieceType.Queen, -1,  0);
+        }
+
         /////////////
         // knights //
         /////////////
-        // for convenience, but might be slow
         Action<int, int, int> TryAddKnightMove = (knight, fileHop, rankHop)=>
         {
             int startFile = GetFile(knight);
@@ -175,7 +246,6 @@ public partial class Engine
             {
                 var move = new Move() {
                     WhiteMove = whiteToMove,
-                    CanCastle = previous.CanCastle,
                     Source = knight,
                     Target = targetPos,
                     Type = MoveType.Normal,
@@ -200,65 +270,11 @@ public partial class Engine
             TryAddKnightMove(knight, -1,  2);
         }
 
-        /////////////
-        // bishops //
-        /////////////
-        Action<int, PieceType, int, int> TrySlidePiece = (slider, sliderType, fileSlide, rankSlide)=>
-        {
-            int startFile = GetFile(slider);
-            int startRank = GetRank(slider);
-            int targetFile = startFile + fileSlide;
-            int targetRank = startRank + rankSlide;
-            int targetPos = GetPos(targetFile, targetRank);
-            bool blocked = occupancy.Contains(targetPos);
-
-            while (targetRank >= 0 && targetRank < nRanks &&
-                   targetFile >= 0 && targetFile < nFiles &&
-                   !blocked)
-            {
-                var move = new Move() {
-                    WhiteMove = whiteToMove,
-                    CanCastle = previous.CanCastle,
-                    Source = slider,
-                    Target = targetPos,
-                    Type = MoveType.Normal,
-                    Moved = sliderType,
-                    Captured = PieceType.None
-                };
-                moves.Add(move);
-
-                targetFile += fileSlide;
-                targetRank += rankSlide;
-                targetPos = GetPos(targetFile, targetRank);
-                blocked = occupancy.Contains(targetPos);
-            }
-
-            bool capture = enemyOccupancy.ContainsKey(targetPos);
-            if (targetRank >= 0 && targetRank < nRanks &&
-                targetFile >= 0 && targetFile < nFiles &&
-                capture)
-            {
-                var move = new Move() {
-                    WhiteMove = whiteToMove,
-                    CanCastle = previous.CanCastle,
-                    Source = slider,
-                    Target = targetPos,
-                    Type = MoveType.Normal,
-                    Moved = sliderType,
-                    Captured = enemyOccupancy[targetPos]
-                };
-                moves.Add(move);
-            }
-        };
-
-        var bishops = whiteToMove? WhiteBishops : BlackBishops;
-        foreach (int bishop in bishops)
-        {
-            TrySlidePiece(bishop, PieceType.Bishop,  1,  1);
-            TrySlidePiece(bishop, PieceType.Bishop,  1, -1);
-            TrySlidePiece(bishop, PieceType.Bishop, -1, -1);
-            TrySlidePiece(bishop, PieceType.Bishop, -1,  1);
-        }
+        //////////
+        // king //
+        //////////
+        int king = whiteToMove? WhiteKing : BlackKing;
+        // TODO: when in check, first look for checking pieces by searching like a knight and a queen
 
         return moves;
     }
