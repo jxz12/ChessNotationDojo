@@ -169,11 +169,14 @@ public class GameManager : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
         else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
 
-        else if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
-        else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
-        else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
-        else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
-        else if (Input.GetKeyDown(KeyCode.K) && K.interactable) InputChar('K');
+        else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        {
+            if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
+            else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
+            else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
+            else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
+            else if (Input.GetKeyDown(KeyCode.K) && K.interactable) InputChar('K');
+        }
         else if (Input.GetKeyDown(KeyCode.X) && x.interactable) InputChar('x');
         else if (Input.GetKeyDown(KeyCode.Equals) && eq.interactable) InputChar('=');
         else if (Input.GetKeyDown(KeyCode.Home) && O_O.interactable) InputChar('>');

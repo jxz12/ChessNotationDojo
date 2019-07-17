@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 ////////////////////////////////////////////////////////
@@ -87,6 +87,206 @@ public partial class Engine
         InitAttackTables();
 
         previous = new Move();
+    }
+    private void InitOccupancy()
+    {
+        whitePawnsInit = new HashSet<int>(WhitePawns);
+        blackPawnsInit = new HashSet<int>(BlackPawns);
+
+        whiteOccupancy = new Dictionary<int, PieceType>();
+        foreach (int pos in WhitePawns)   whiteOccupancy[pos] = PieceType.Pawn;
+        foreach (int pos in WhiteRooks)   whiteOccupancy[pos] = PieceType.Rook;
+        foreach (int pos in WhiteKnights) whiteOccupancy[pos] = PieceType.Knight;
+        foreach (int pos in WhiteBishops) whiteOccupancy[pos] = PieceType.Bishop;
+        foreach (int pos in WhiteQueens)  whiteOccupancy[pos] = PieceType.Queen;
+        whiteOccupancy[WhiteKing] = PieceType.King;
+        
+        blackOccupancy = new Dictionary<int, PieceType>();
+        foreach (int pos in BlackPawns)   blackOccupancy[pos] = PieceType.Pawn;
+        foreach (int pos in BlackRooks)   blackOccupancy[pos] = PieceType.Rook;
+        foreach (int pos in BlackKnights) blackOccupancy[pos] = PieceType.Knight;
+        foreach (int pos in BlackBishops) blackOccupancy[pos] = PieceType.Bishop;
+        foreach (int pos in BlackQueens)  blackOccupancy[pos] = PieceType.Queen;
+        blackOccupancy[BlackKing] = PieceType.King;
+
+        occupancy = new HashSet<int>();
+        occupancy.UnionWith(whiteOccupancy.Keys);
+        occupancy.UnionWith(blackOccupancy.Keys);
+    }
+    
+
+    private int GetFile(int pos)
+    {
+        return pos % nFiles;
+    }
+    private int GetRank(int pos)
+    {
+        return pos / nFiles;
+    }
+    private int GetPos(int file, int rank)
+    {
+        return rank * nFiles + file;
+    }
+
+    // for bishops, rooks, queens
+    private IEnumerable<int> SliderAttacks(int slider, int fileSlide, int rankSlide, bool whiteToMove)
+    {
+        int startFile = GetFile(slider);
+        int startRank = GetRank(slider);
+        int targetFile = startFile + fileSlide;
+        int targetRank = startRank + rankSlide;
+        int targetPos = GetPos(targetFile, targetRank);
+
+        while (targetFile >= 0 && targetFile < nFiles &&
+               targetRank >= 0 && targetRank < nRanks &&
+               !occupancy.Contains(targetPos))
+        {
+            yield return targetPos;
+
+            targetFile += fileSlide;
+            targetRank += rankSlide;
+            targetPos = GetPos(targetFile, targetRank);
+        }
+
+        if (targetFile >= 0 && targetFile < nFiles &&
+            targetRank >= 0 && targetRank < nRanks &&
+            (whiteToMove? blackOccupancy.ContainsKey(targetPos)
+                        : whiteOccupancy.ContainsKey(targetPos)))
+        {
+            yield return targetPos;
+        }
+    }
+    private IEnumerable<int> BishopAttacks(int bishop, bool whiteToMove)
+    {
+        return         SliderAttacks(bishop,  1,  1, whiteToMove)
+               .Concat(SliderAttacks(bishop,  1, -1, whiteToMove))
+               .Concat(SliderAttacks(bishop, -1, -1, whiteToMove))
+               .Concat(SliderAttacks(bishop, -1,  1, whiteToMove));
+    }
+    private IEnumerable<int> RookAttacks(int rook, bool whiteToMove)
+    {
+        return         SliderAttacks(rook,  0,  1, whiteToMove)
+               .Concat(SliderAttacks(rook,  1,  0, whiteToMove))
+               .Concat(SliderAttacks(rook,  0, -1, whiteToMove))
+               .Concat(SliderAttacks(rook, -1,  0, whiteToMove));
+    }
+    private IEnumerable<int> QueenAttacks(int queen, bool whiteToMove)
+    {
+        return       BishopAttacks(queen, whiteToMove)
+               .Concat(RookAttacks(queen, whiteToMove));
+    }
+    // for knights, kings, pawns (one move)
+    private IEnumerable<int> HopperAttack(int hopper, int fileHop, int rankHop, bool whiteToMove)
+    {
+        int startFile = GetFile(hopper);
+        int startRank = GetRank(hopper);
+        int targetFile = startFile + fileHop;
+        int targetRank = startRank + rankHop;
+        int targetPos = GetPos(targetFile, targetRank);
+
+        if (targetFile >= 0 && targetFile < nFiles &&
+            targetRank >= 0 && targetRank < nRanks &&
+            (whiteToMove? !whiteOccupancy.ContainsKey(targetPos)
+                        : !blackOccupancy.ContainsKey(targetPos)))
+            // only blocked by own pieces
+        {
+            yield return targetPos;
+        }
+    }
+    private IEnumerable<int> PawnAttacks(int pawn, bool whiteToMove)
+    {
+        if (whiteToMove)
+        {
+            return         HopperAttack(pawn,  1, 1, whiteToMove)
+                   .Concat(HopperAttack(pawn, -1, 1, whiteToMove));
+        }
+        else
+        {
+            return         HopperAttack(pawn,  1, -1, whiteToMove)
+                   .Concat(HopperAttack(pawn, -1, -1, whiteToMove));
+        }
+    }
+    private IEnumerable<int> KnightAttacks(int knight, bool whiteToMove)
+    {
+        return         HopperAttack(knight,  1,  2, whiteToMove)
+               .Concat(HopperAttack(knight,  2,  1, whiteToMove))
+               .Concat(HopperAttack(knight,  2, -1, whiteToMove))
+               .Concat(HopperAttack(knight,  1, -2, whiteToMove))
+               .Concat(HopperAttack(knight, -1, -2, whiteToMove))
+               .Concat(HopperAttack(knight, -2, -1, whiteToMove))
+               .Concat(HopperAttack(knight, -2,  1, whiteToMove))
+               .Concat(HopperAttack(knight, -1,  2, whiteToMove));
+    }
+    private IEnumerable<int> KingAttacks(int king, bool whiteToMove)
+    {
+        return         HopperAttack(king,  0,  1, whiteToMove)
+               .Concat(HopperAttack(king,  1,  1, whiteToMove))
+               .Concat(HopperAttack(king,  1,  0, whiteToMove))
+               .Concat(HopperAttack(king,  1, -1, whiteToMove))
+               .Concat(HopperAttack(king,  0, -1, whiteToMove))
+               .Concat(HopperAttack(king, -1,  1, whiteToMove))
+               .Concat(HopperAttack(king, -1,  0, whiteToMove))
+               .Concat(HopperAttack(king, -1, -1, whiteToMove));
+    }
+
+    private void InitAttackTables() // relies on occupancy being filled in
+    {
+        whiteAttackTable = new int[nFiles*nRanks];
+        blackAttackTable = new int[nFiles*nRanks];
+
+        foreach (int pawn in WhitePawns)
+            foreach (int attack in PawnAttacks(pawn, true))
+                whiteAttackTable[attack] += 1;
+        foreach (int pawn in BlackPawns)
+            foreach (int attack in PawnAttacks(pawn, false))
+                blackAttackTable[attack] += 1;
+
+        foreach (int knight in WhiteKnights)
+            foreach (int attack in KnightAttacks(knight, true))
+                whiteAttackTable[attack] += 1;
+        foreach (int knight in BlackKnights)
+            foreach (int attack in KnightAttacks(knight, false))
+                blackAttackTable[attack] += 1;
+
+        foreach (int bishop in WhiteBishops)
+            foreach (int attack in BishopAttacks(bishop, true))
+                whiteAttackTable[attack] += 1;
+        foreach (int bishop in BlackBishops)
+            foreach (int attack in BishopAttacks(bishop, false))
+                blackAttackTable[attack] += 1;
+
+        foreach (int rook in WhiteRooks)
+            foreach (int attack in RookAttacks(rook, true))
+                whiteAttackTable[attack] += 1;
+        foreach (int rook in BlackBishops)
+            foreach (int attack in RookAttacks(rook, false))
+                blackAttackTable[attack] += 1;
+
+        foreach (int queen in WhiteQueens)
+            foreach (int attack in QueenAttacks(queen, true))
+                whiteAttackTable[attack] += 1;
+        foreach (int queen in BlackQueens)
+            foreach (int attack in QueenAttacks(queen, false))
+                blackAttackTable[attack] += 1;
+
+        foreach (int attack in KingAttacks(WhiteKing, true))
+            whiteAttackTable[attack] += 1;
+        foreach (int attack in KingAttacks(BlackKing, false))
+            blackAttackTable[attack] += 1;
+
+
+        UnityEngine.Debug.Log("white");
+        for (int i=0; i<whiteAttackTable.Length; i++)
+        {
+            if (whiteAttackTable[i] != 0)
+                UnityEngine.Debug.Log(i+" "+whiteAttackTable[i]);
+        }
+        UnityEngine.Debug.Log("black");
+        for (int i=0; i<blackAttackTable.Length; i++)
+        {
+            if (blackAttackTable[i] != 0)
+                UnityEngine.Debug.Log(i+" "+blackAttackTable[i]);
+        }
     }
 
 
