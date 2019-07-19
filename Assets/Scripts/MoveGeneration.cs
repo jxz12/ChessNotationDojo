@@ -4,7 +4,7 @@ using System.Collections.Generic;
 public partial class Engine
 {
     // Generate candidate moves given the current board state and previous move
-    private List<Move> GenerateMoves()
+    private List<Move> GeneratePseudoLegalMoves()
     {
         var moves = new List<Move>();
         bool whiteToMove = !previous.WhiteMove;
@@ -191,30 +191,25 @@ public partial class Engine
             }
         }
 
-        //////////
-        // king //
-        //////////
         int king = whiteToMove? WhiteKing : BlackKing;
-        int[] enemyAttack = whiteToMove? blackAttackTable : whiteAttackTable;
         foreach (int attack in KingAttacks(king, whiteToMove))
         {
-            if (enemyAttack[attack] == 0)
-            {
-                moves.Add(new Move() {
-                    WhiteMove = whiteToMove,
-                    Source = king,
-                    Target = attack,
-                    Type = MoveType.Normal,
-                    Moved = PieceType.King,
-                    Captured = enemyOccupancy.ContainsKey(attack)
-                                ? enemyOccupancy[attack]
-                                : PieceType.None
-                });
-            }
+            moves.Add(new Move() {
+                WhiteMove = whiteToMove,
+                Source = king,
+                Target = attack,
+                Type = MoveType.Normal,
+                Moved = PieceType.King,
+                Captured = enemyOccupancy.ContainsKey(attack)
+                            ? enemyOccupancy[attack]
+                            : PieceType.None
+            });
         }
+
 
         return moves;
     }
+
     private void AddPiece(PieceType type, int pos, bool white)
     {
         if (occupancy.Contains(pos))
@@ -289,8 +284,6 @@ public partial class Engine
 
     private void PerformMove(Move move)
     {
-        // TODO: when finished with a move, update the attack table
-        //       watch out for discover attacks by looking like a queen
         if (move.Moved == PieceType.Pawn)
         {
             if (move.Captured != PieceType.None)
@@ -341,6 +334,8 @@ public partial class Engine
         previous = move;
         InitAttackTables();
     }
+
+
     private void UndoMove(Move move)
     {
         // TODO:

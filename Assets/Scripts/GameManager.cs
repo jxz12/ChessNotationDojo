@@ -113,17 +113,37 @@ public class GameManager : MonoBehaviour
         {
             // print(candidate);
             thomas.PerformMoveAlgebraic(candidate);
-			moves.Add(candidate);
-			WriteMoveSheet();
-            candidate = "";
             allCandidates = new HashSet<string>(thomas.GetMovesAlgebraic());
+			WriteMoveSheet(thomas.IsCheck());
+
+            candidate = "";
             Display();
         }
         ShowPossibleChars();
     }
-	void WriteMoveSheet()
+	void WriteMoveSheet(bool check)
 	{
-		if (moves.Count == 0) moveSheet = "";
+        if (check && allCandidates.Count == 0) // checkmate
+        {
+            candidate += '+';
+            if (moves.Count%2 == 0)
+            {
+                candidate += " 0-1";
+            }
+            else
+            {
+                candidate += " 1-0";
+            }
+        }
+        else if (check && allCandidates.Count > 0) // check
+        {
+            candidate += '#';
+        }
+        else if (!check && allCandidates.Count == 0) // draw
+        {
+            candidate += " ½-½";
+        }
+        moves.Add(candidate);
 
 		var sb = new StringBuilder(moves[0]);
 		for (int i=1; i<moves.Count; i++)

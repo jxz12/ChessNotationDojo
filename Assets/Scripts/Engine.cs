@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -66,9 +67,6 @@ public partial class Engine
 
     // for puush
     private HashSet<int> whitePawnsInit, blackPawnsInit;
-    // for castling
-    private HashSet<int> castlePiecesInit;
-
     // for checking blocks
     private HashSet<int> occupancy;
     // for checking captures
@@ -229,6 +227,108 @@ public partial class Engine
                .Concat(HopperAttack(king, -1, -1, whiteToMove));
     }
 
+    public IEnumerable<int> FindAnyThreats(int threatened, bool whiteToMove)
+    {
+        var enemies = whiteToMove? blackOccupancy : whiteOccupancy;
+
+        // attacks are bidirectional, so attack = threat
+        return PawnAttacks(threatened, whiteToMove)
+                   .Where(x=> enemies[x]==PieceType.Pawn)
+               .Concat(KnightAttacks(threatened, whiteToMove))
+                   .Where(x=> enemies[x]==PieceType.Knight)
+               .Concat(BishopAttacks(threatened, whiteToMove))
+                   .Where(x=> enemies[x]==PieceType.Bishop
+                           || enemies[x]==PieceType.Queen)
+               .Concat(RookAttacks(threatened, whiteToMove))
+                   .Where(x=> enemies[x]==PieceType.Rook
+                           || enemies[x]==PieceType.Queen)
+               .Concat(KingAttacks(threatened, whiteToMove))
+                   .Where(x=> enemies[x]==PieceType.King);
+    }
+
+    // public IEnumerable<int> FindPinned(int pinned, int fileSlide, int rankSlide, bool whiteToMove)
+    // {
+    //     int startFile = GetFile(pinned);
+    //     int startRank = GetRank(pinned);
+    //     int targetFile = startFile + fileSlide;
+    //     int targetRank = startRank + rankSlide;
+    //     int targetPos = GetPos(targetFile, targetRank);
+
+    //     int potentialPinned = -1;
+
+    //     while (targetFile >= 0 && targetFile < nFiles &&
+    //            targetRank >= 0 && targetRank < nRanks)
+    //     {
+    //         if (potentialPinned == -1) // find friend piece first
+    //         {
+    //             if (occupancy.Contains(targetPos))
+    //             {
+    //                 var friends = whiteToMove? whiteOccupancy : blackOccupancy;
+    //                 if (friends.ContainsKey(targetPos))
+    //                 {
+    //                     potentialPinned = targetPos;
+    //                 }
+    //                 else
+    //                 {
+    //                     yield break;
+    //                 }
+    //             }
+    //         }
+    //         else // then enemy
+    //         {
+    //             if (occupancy.Contains(targetPos))
+    //             {
+    //                 var enemies = whiteToMove? blackOccupancy : whiteOccupancy;
+    //                 if (enemies.ContainsKey(targetPos))
+    //                 {
+    //                     yield return potentialPinned;
+    //                 }
+    //                 else
+    //                 {
+    //                     yield break;
+    //                 }
+    //             }
+    //         }
+    //         targetFile += fileSlide;
+    //         targetRank += rankSlide;
+    //         targetPos = GetPos(targetFile, targetRank);
+    //     }
+    // }
+    // public IEnumerable<int> FindAllPinned(int pinnedTo, bool whiteToMove)
+    // {
+    //     // bishops
+    //     var enemies = whiteToMove? blackOccupancy : whiteOccupancy;
+
+    //            // diagonal
+    //     return FindPinned(pinnedTo,  1,  1, whiteToMove)
+    //                .Where(x=> enemies[x]==PieceType.Bishop
+    //                        || enemies[x]==PieceType.Queen)
+    //            .Concat(FindPinned(pinnedTo,  1, -1, whiteToMove))
+    //                .Where(x=> enemies[x]==PieceType.Bishop
+    //                        || enemies[x]==PieceType.Queen)
+    //            .Concat(FindPinned(pinnedTo, -1, -1, whiteToMove))
+    //                .Where(x=> enemies[x]==PieceType.Bishop
+    //                        || enemies[x]==PieceType.Queen)
+    //            .Concat(FindPinned(pinnedTo, -1,  1, whiteToMove))
+    //                .Where(x=> enemies[x]==PieceType.Bishop
+    //                        || enemies[x]==PieceType.Queen)
+
+    //            // horizontal/vertical
+    //            .Concat(FindPinned(pinnedTo,  0,  1, whiteToMove))
+    //                .Where(x=> enemies[x]==PieceType.Rook
+    //                        || enemies[x]==PieceType.Queen)
+    //            .Concat(FindPinned(pinnedTo,  1,  0, whiteToMove))
+    //                .Where(x=> enemies[x]==PieceType.Rook
+    //                        || enemies[x]==PieceType.Queen)
+    //            .Concat(FindPinned(pinnedTo,  0, -1, whiteToMove))
+    //                .Where(x=> enemies[x]==PieceType.Rook
+    //                        || enemies[x]==PieceType.Queen)
+    //            .Concat(FindPinned(pinnedTo, -1,  0, whiteToMove))
+    //                .Where(x=> enemies[x]==PieceType.Rook
+    //                        || enemies[x]==PieceType.Queen);
+    // }
+
+
     private void InitAttackTables() // relies on occupancy being filled in
     {
         whiteAttackTable = new int[nFiles*nRanks];
@@ -274,21 +374,19 @@ public partial class Engine
         foreach (int attack in KingAttacks(BlackKing, false))
             blackAttackTable[attack] += 1;
 
-
-        UnityEngine.Debug.Log("white");
-        for (int i=0; i<whiteAttackTable.Length; i++)
-        {
-            if (whiteAttackTable[i] != 0)
-                UnityEngine.Debug.Log(i+" "+whiteAttackTable[i]);
-        }
-        UnityEngine.Debug.Log("black");
-        for (int i=0; i<blackAttackTable.Length; i++)
-        {
-            if (blackAttackTable[i] != 0)
-                UnityEngine.Debug.Log(i+" "+blackAttackTable[i]);
-        }
+        // UnityEngine.Debug.Log("white");
+        // for (int i=0; i<whiteAttackTable.Length; i++)
+        // {
+        //     if (whiteAttackTable[i] != 0)
+        //         UnityEngine.Debug.Log(i+" "+whiteAttackTable[i]);
+        // }
+        // UnityEngine.Debug.Log("black");
+        // for (int i=0; i<blackAttackTable.Length; i++)
+        // {
+        //     if (blackAttackTable[i] != 0)
+        //         UnityEngine.Debug.Log(i+" "+blackAttackTable[i]);
+        // }
     }
-
 
     ///////////////////////////////////
     // for interface from the outside
@@ -337,16 +435,17 @@ public partial class Engine
 
     public IEnumerable<string> GetMovesAlgebraic()
     {
-        var moves = GenerateMoves();
+        var moves = GeneratePseudoLegalMoves();
         foreach (Move move in moves)
         {
             yield return GetAlgebraic(move);
         }
     }
 
+    // returns if check
     public void PerformMoveAlgebraic(string todo)
     {
-        var moves = GenerateMoves();
+        var moves = GeneratePseudoLegalMoves();
         foreach (Move move in moves)
         {
             if (GetAlgebraic(move) == todo)
@@ -355,7 +454,15 @@ public partial class Engine
                 return;
             }
         }
+        throw new Exception("No moves possible!");
     }
+    public bool IsCheck()
+    {
+        int threatenedKing = previous.WhiteMove? BlackKing : WhiteKing;
+        int[] threatenTable = previous.WhiteMove? whiteAttackTable : blackAttackTable;
+        return threatenTable[threatenedKing] != 0; // check
+    }
+
     public void UndoLastMove()
     {
         // TODO:
