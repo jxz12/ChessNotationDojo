@@ -1,10 +1,193 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public partial class Engine
 {
+    // convenience
+    private int GetFile(int pos)
+    {
+        return pos % nFiles;
+    }
+    private int GetRank(int pos)
+    {
+        return pos / nFiles;
+    }
+    private int GetPos(int file, int rank)
+    {
+        return rank * nFiles + file;
+    }
+    private bool Occupied(int pos)
+    {
+        return whiteOccupancy.ContainsKey(pos) || blackOccupancy.ContainsKey(pos);
+    }
+
+    // for finding candidate bishop, rook, queen moves
+    private IEnumerable<int> SliderAttacks(int slider, int fileSlide, int rankSlide, bool whiteToMove)
+    {
+        int startFile = GetFile(slider);
+        int startRank = GetRank(slider);
+        int targetFile = startFile + fileSlide;
+        int targetRank = startRank + rankSlide;
+        int targetPos = GetPos(targetFile, targetRank);
+
+        while (targetFile >= 0 && targetFile < nFiles &&
+               targetRank >= 0 && targetRank < nRanks &&
+               !Occupied(targetPos))
+        {
+            yield return targetPos;
+            targetFile += fileSlide;
+            targetRank += rankSlide;
+            targetPos = GetPos(targetFile, targetRank);
+        }
+
+        if (targetFile >= 0 && targetFile < nFiles &&
+            targetRank >= 0 && targetRank < nRanks &&
+            (whiteToMove? blackOccupancy.ContainsKey(targetPos)
+                        : whiteOccupancy.ContainsKey(targetPos)))
+        {
+            yield return targetPos;
+        }
+    }
+    private IEnumerable<int> BishopAttacks(int bishop, bool whiteToMove)
+    {
+        return         SliderAttacks(bishop,  1,  1, whiteToMove)
+               .Concat(SliderAttacks(bishop,  1, -1, whiteToMove))
+               .Concat(SliderAttacks(bishop, -1, -1, whiteToMove))
+               .Concat(SliderAttacks(bishop, -1,  1, whiteToMove));
+    }
+    private IEnumerable<int> RookAttacks(int rook, bool whiteToMove)
+    {
+        return         SliderAttacks(rook,  0,  1, whiteToMove)
+               .Concat(SliderAttacks(rook,  1,  0, whiteToMove))
+               .Concat(SliderAttacks(rook,  0, -1, whiteToMove))
+               .Concat(SliderAttacks(rook, -1,  0, whiteToMove));
+    }
+    private IEnumerable<int> QueenAttacks(int queen, bool whiteToMove)
+    {
+        return       BishopAttacks(queen, whiteToMove)
+               .Concat(RookAttacks(queen, whiteToMove));
+    }
+    // for candidate knight, king, pawn moves
+    private IEnumerable<int> HopperAttack(int hopper, int fileHop, int rankHop, bool whiteToMove)
+    {
+        int startFile = GetFile(hopper);
+        int startRank = GetRank(hopper);
+        int targetFile = startFile + fileHop;
+        int targetRank = startRank + rankHop;
+        int targetPos = GetPos(targetFile, targetRank);
+
+        if (targetFile >= 0 && targetFile < nFiles &&
+            targetRank >= 0 && targetRank < nRanks &&
+            (whiteToMove? !whiteOccupancy.ContainsKey(targetPos)
+                        : !blackOccupancy.ContainsKey(targetPos)))
+            // only blocked by own pieces
+        {
+            yield return targetPos;
+        }
+    }
+    private IEnumerable<int> PawnAttacks(int pawn, bool whiteToMove)
+    {
+        if (whiteToMove)
+        {
+            return         HopperAttack(pawn,  1, 1, whiteToMove)
+                   .Concat(HopperAttack(pawn, -1, 1, whiteToMove));
+        }
+        else
+        {
+            return         HopperAttack(pawn,  1, -1, whiteToMove)
+                   .Concat(HopperAttack(pawn, -1, -1, whiteToMove));
+        }
+    }
+    private IEnumerable<int> KnightAttacks(int knight, bool whiteToMove)
+    {
+        return         HopperAttack(knight,  1,  2, whiteToMove)
+               .Concat(HopperAttack(knight,  2,  1, whiteToMove))
+               .Concat(HopperAttack(knight,  2, -1, whiteToMove))
+               .Concat(HopperAttack(knight,  1, -2, whiteToMove))
+               .Concat(HopperAttack(knight, -1, -2, whiteToMove))
+               .Concat(HopperAttack(knight, -2, -1, whiteToMove))
+               .Concat(HopperAttack(knight, -2,  1, whiteToMove))
+               .Concat(HopperAttack(knight, -1,  2, whiteToMove));
+    }
+    private IEnumerable<int> KingAttacks(int king, bool whiteToMove)
+    {
+        return         HopperAttack(king,  0,  1, whiteToMove)
+               .Concat(HopperAttack(king,  1,  1, whiteToMove))
+               .Concat(HopperAttack(king,  1,  0, whiteToMove))
+               .Concat(HopperAttack(king,  1, -1, whiteToMove))
+               .Concat(HopperAttack(king,  0, -1, whiteToMove))
+               .Concat(HopperAttack(king, -1,  1, whiteToMove))
+               .Concat(HopperAttack(king, -1,  0, whiteToMove))
+               .Concat(HopperAttack(king, -1, -1, whiteToMove));
+    }
+
+    // all for castling
+    private int FindVirginRook(int source, bool left, bool whiteToMove)
+    {
+        int startFile = GetFile(source);
+        int startRank = GetRank(source);
+        int fileSlide = left? -1 : 1;
+        int targetFile = startFile + fileSlide;
+        int targetPos = GetPos(targetFile, startRank);
+
+        while (targetFile >= 0 && targetFile < nFiles)
+        {
+            if (Occupied(targetPos))
+            {
+                var allies = whiteToMove? whiteOccupancy
+                                        : blackOccupancy;
+                PieceType ally;
+                allies.TryGetValue(targetPos, out ally);
+                return ally==PieceType.VirginRook? targetPos 
+                                                 : -1;
+            }
+            targetFile += fileSlide;
+            targetPos = GetPos(targetFile, startRank);
+        }
+        return -1;
+    }
+    private int GetCastledPos(int king, bool left, bool whiteToMove)
+    {
+        int rank = GetRank(king);
+        int file;
+        if (whiteToMove)
+        {
+            if (left) file = WhiteLeftCastledFile;
+            else      file = WhiteRightCastledFile;
+        }
+        else
+        {
+            if (left) file = BlackLeftCastledFile;
+            else      file = BlackRightCastledFile;
+        }
+        return GetPos(file, rank);
+    }
+    private bool FindCastlingRook(int king, bool left, bool whiteToMove, out int virginRook)
+    {
+        virginRook = FindVirginRook(king, left, whiteToMove);
+        if (virginRook < 0)
+            return false;
+        int castledPos = GetCastledPos(king, left, whiteToMove);
+        if (castledPos < 0)
+            return false;
+        
+        // check whether all squares involved are free
+        int leftmostPos = left? Math.Min(virginRook, castledPos)
+                              : Math.Min(castledPos-1, king);
+        int rightmostPos = left? Math.Max(castledPos+1, king)
+                               : Math.Max(virginRook, castledPos);
+
+        var allies = whiteToMove? whiteOccupancy : blackOccupancy;
+        for (int pos=leftmostPos; pos<=rightmostPos; pos++)
+        {
+            if (pos!=king && pos!=virginRook && Occupied(pos))
+                return false;
+        }
+        return true;
+    }
     // Generate candidate moves given the current board state and previous move
-    private IEnumerable<Move> PseudoLegalMoves(Move previous)
+    private IEnumerable<Move> FindPseudoLegalMoves(Move previous)
     {
         bool whiteToMove = !previous.WhiteMove;
         var allies = whiteToMove? whiteOccupancy : blackOccupancy;
@@ -26,7 +209,6 @@ public partial class Engine
                     Target = leftRook,
                     Type = MoveType.Castle,
                     Moved = PieceType.VirginKing,
-                    Captured = PieceType.None,
                     Previous = previous
                 };
             }
@@ -39,7 +221,6 @@ public partial class Engine
                     Target = rightRook,
                     Type = MoveType.Castle,
                     Moved = PieceType.VirginKing,
-                    Captured = PieceType.None,
                     Previous = previous
                 };
             }
@@ -242,9 +423,9 @@ public partial class Engine
             };
         }
     }
+    // convenience function to check for promotion
     private IEnumerable<Move> PromotionsIfPossible(Move pawnMove)
     {
-        // check for promotion
         if (pawnMove.Target/nRanks == (pawnMove.WhiteMove? nRanks-1 : 0))
         {
             // add possible promotions
@@ -265,6 +446,72 @@ public partial class Engine
             }
             yield return pawnMove;
         }
+    }
+
+    // returns if current has moved into check
+    private bool InCheck(Move current, IEnumerable<Move> nexts)
+    {
+        bool inCheck = false;
+        if (current.Type != MoveType.Castle)
+        {
+            // simply check for king being captured
+            foreach (Move next in nexts)
+            {
+                if (next.Captured == PieceType.King
+                    || next.Captured == PieceType.VirginKing)
+                {
+                    inCheck = true;
+                    break;
+                }
+            }
+        }
+        else // need to check all squares moved through
+        {
+            var kingSquares = new HashSet<int>();
+            int kingBefore = current.Source;
+            int kingAfter = current.WhiteMove? WhiteKing : BlackKing;
+
+            if (kingBefore > kingAfter) // move left
+            {
+                for (int pos=kingBefore; pos>kingAfter; pos--)
+                    kingSquares.Add(pos);
+            }
+            else
+            {
+                for (int pos=kingBefore; pos<kingAfter; pos++)
+                    kingSquares.Add(pos);
+            }
+            foreach (Move next in nexts)
+            {
+                if (next.Captured == PieceType.King
+                    || next.Captured == PieceType.VirginKing
+                    || kingSquares.Contains(next.Target))
+                {
+                    inCheck = true;
+                    break;
+                }
+            }
+        }
+        return inCheck;
+    }
+    // returns if current move is checking enemy
+    private bool IsCheck(Move current)
+    {
+        // assume empty move for black
+        Move empty = new Move() { WhiteMove = !current.WhiteMove };
+        foreach (Move next in FindPseudoLegalMoves(empty))
+        {
+            if (next.Captured == PieceType.King
+                || next.Captured == PieceType.VirginKing)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    public bool Check()
+    {
+        return IsCheck(lastPlayed);
     }
 
     private void AddPiece(PieceType type, int pos, bool white)
@@ -334,6 +581,9 @@ public partial class Engine
 
     private void PlayMove(Move move)
     {
+        if (move.Type == MoveType.None)
+            return;
+
         // capture target
         if (move.Captured != PieceType.None)
         {
@@ -371,6 +621,9 @@ public partial class Engine
     }
     private void UndoMove(Move move)
     {
+        if (move.Type == MoveType.None)
+            return;
+
         // move back source
         if (move.Type == MoveType.Castle)
         {

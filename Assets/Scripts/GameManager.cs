@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Text;
+using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -52,6 +53,15 @@ public class GameManager : MonoBehaviour
         allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
         ShowPossibleChars();
         Display();
+        
+        Perft();
+    }
+    [SerializeField] int ply;
+    async void Perft()
+    {
+        float start = Time.time;
+        await Task.Run(()=> print(thomas.Perft(ply)));
+        print(Time.time - start);
     }
     void Update()
     {
@@ -110,9 +120,12 @@ public class GameManager : MonoBehaviour
         candidate += input;
         if (allCandidates.Contains(candidate))
         {
-            bool check = thomas.PlayMoveAlgebraic(candidate);
+            thomas.PlayMoveAlgebraic(candidate);
+            moves.Push(candidate);
+            undos.Clear();
+
+            candidate = "";
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
-            WriteMove(check);
             Display();
         }
         ShowPossibleChars();
@@ -123,38 +136,52 @@ public class GameManager : MonoBehaviour
         {
             thomas.UndoLastMove();
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
-            moves.Pop();
+            undos.Push(moves.Pop());
             Display();
             ShowPossibleChars();
         }
     }
+    void RedoMove()
+    {
+        if (undos.Count > 0)
+        {
+            string redo = undos.Pop();
+            thomas.PlayMoveAlgebraic(redo);
+            allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+            moves.Push(redo);
+            Display();
+            ShowPossibleChars();
+        }
+    }
+    // string GetMoveSheet()
+    // {
+    //     bool check = thomas.IsCheck();
+    //     if (check && allCandidates.Count == 0) // checkmate
+    //     {
+    //         candidate += '#';
+    //         if (moves.Count%2 == 0)
+    //         {
+    //             candidate += " 1-0";
+    //         }
+    //         else
+    //         {
+    //             candidate += " 0-1";
+    //         }
+    //     }
+    //     else if (check && allCandidates.Count > 0) // check
+    //     {
+    //         candidate += '+';
+    //     }
+    //     else if (!check && allCandidates.Count == 0) // draw
+    //     {
+    //         candidate += " ½-½";
+    //     }
+    // }
 
     Stack<string> moves = new Stack<string>();
+    Stack<string> undos = new Stack<string>();
     void WriteMove(bool check)
     {
-        if (check && allCandidates.Count == 0) // checkmate
-        {
-            candidate += '#';
-            if (moves.Count%2 == 0)
-            {
-                candidate += " 1-0";
-            }
-            else
-            {
-                candidate += " 0-1";
-            }
-        }
-        else if (check && allCandidates.Count > 0) // check
-        {
-            candidate += '+';
-        }
-        else if (!check && allCandidates.Count == 0) // draw
-        {
-            candidate += " ½-½";
-        }
-        // print(candidate);
-        moves.Push(candidate);
-        candidate = "";
     }
     string MovesToString()
     {
@@ -185,10 +212,11 @@ public class GameManager : MonoBehaviour
     void ReadCharFromKeyboard()
     {
 
-        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        if (Input.GetKeyDown(KeyCode.LeftArrow)) UndoMove();
+        else if (Input.GetKeyDown(KeyCode.RightArrow)) RedoMove();
+        else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
-            if (Input.GetKeyDown(KeyCode.Backspace)) UndoMove();
-            else if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
+            if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
             else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
             else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
             else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
