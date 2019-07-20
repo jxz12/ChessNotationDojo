@@ -7,8 +7,6 @@ public partial class Engine
     private IEnumerable<Move> PseudoLegalMoves(Move previous)
     {
         bool whiteToMove = !previous.WhiteMove;
-        var allyPawns = whiteToMove? WhitePawns : BlackPawns;
-        var enemyPawns =  whiteToMove? BlackPawns : WhitePawns;
         var allies = whiteToMove? whiteOccupancy : blackOccupancy;
         var enemies = whiteToMove? blackOccupancy : whiteOccupancy;
 
@@ -16,46 +14,43 @@ public partial class Engine
         // castle //
         ////////////
         int king = whiteToMove? WhiteKing : BlackKing;
-        // var kingType = whiteToMove? whiteOccupancy[king] : blackOccupancy[king];
-        // if (kingType == PieceType.VirginKing)
-        // {
-        //     PieceType left = AllyRaycast(king, -1, 0, whiteToMove);
-        //     if (left == PieceType.VirginRook) // TODO: won't work for bizarre castles
-        //     {
-        //         int castleFile = whiteToMove? WhiteLeftCastledFile
-        //                                     : BlackLeftCastledFile;
-        //         yield return new Move() {
-        //             WhiteMove = whiteToMove,
-        //             Source = king,
-        //             Target = GetPos(castleFile, GetRank(king)),
-        //             Type = MoveType.Castle,
-        //             Moved = PieceType.Pawn,
-        //             Captured = PieceType.Pawn,
-        //             Previous = previous
-        //         };
-        //     }
-        //     PieceType right = AllyRaycast(king, 1, 0, whiteToMove);
-        //     UnityEngine.Debug.Log(right);
-        //     if (right == PieceType.VirginRook) // TODO: won't work for bizarre castles
-        //     {
-        //         int castleFile = whiteToMove? WhiteRightCastledFile
-        //                                     : BlackRightCastledFile;
-        //         yield return new Move() {
-        //             WhiteMove = whiteToMove,
-        //             Source = king,
-        //             Target = GetPos(castleFile, GetRank(king)),
-        //             Type = MoveType.Castle,
-        //             Moved = PieceType.Pawn,
-        //             Captured = PieceType.Pawn,
-        //             Previous = previous
-        //         };
-        //     }
-        // }
+        var kingType = whiteToMove? whiteOccupancy[king] : blackOccupancy[king];
+        if (kingType == PieceType.VirginKing)
+        {
+            int leftRook;
+            if (FindCastlingRook(king, true, whiteToMove, out leftRook))
+            {
+                yield return new Move() {
+                    WhiteMove = whiteToMove,
+                    Source = king,
+                    Target = leftRook,
+                    Type = MoveType.Castle,
+                    Moved = PieceType.VirginKing,
+                    Captured = PieceType.None,
+                    Previous = previous
+                };
+            }
+            int rightRook;
+            if (FindCastlingRook(king, false, whiteToMove, out rightRook))
+            {
+                yield return new Move() {
+                    WhiteMove = whiteToMove,
+                    Source = king,
+                    Target = rightRook,
+                    Type = MoveType.Castle,
+                    Moved = PieceType.VirginKing,
+                    Captured = PieceType.None,
+                    Previous = previous
+                };
+            }
+        }
 
         ////////////////
         // en passant //
         ////////////////
         int forward = whiteToMove? nFiles : -nFiles;
+        var allyPawns = whiteToMove? WhitePawns : BlackPawns;
+        var enemyPawns =  whiteToMove? BlackPawns : WhitePawns;
         if (previous.Moved == PieceType.VirginPawn &&
             previous.Target == previous.Source - 2*forward)
         {
@@ -69,7 +64,7 @@ public partial class Engine
                     Target = previous.Target + forward,
                     Type = MoveType.EnPassant,
                     Moved = allies[previous.Target-1],
-                    Captured = PieceType.Pawn,
+                    Captured = enemies[previous.Target],
                     Previous = previous
                 };
             }
@@ -82,9 +77,8 @@ public partial class Engine
                     Source = previous.Target + 1,
                     Target = previous.Target + forward,
                     Type = MoveType.EnPassant,
-                    // Moved = PieceType.Pawn,
                     Moved = allies[previous.Target+1],
-                    Captured = PieceType.Pawn,
+                    Captured = enemies[previous.Target],
                     Previous = previous
                 };
             }
@@ -132,8 +126,9 @@ public partial class Engine
             // capture
             foreach (int attack in PawnAttacks(pawn, whiteToMove))
             {
+                PieceType capture;
                 // pawns cannot move to an attacked square unless it's a capture
-                if (enemies.ContainsKey(attack))
+                if (enemies.TryGetValue(attack, out capture))
                 {
                     var pish = new Move() {
                         WhiteMove = whiteToMove,
@@ -141,7 +136,7 @@ public partial class Engine
                         Target = attack,
                         Type = MoveType.Normal,
                         Moved = allies[pawn],
-                        Captured = enemies[attack],
+                        Captured = capture,
                         Previous = previous
                     };
                     foreach (Move m in PromotionsIfPossible(pish))
@@ -159,15 +154,15 @@ public partial class Engine
         {
             foreach (int attack in KnightAttacks(knight, whiteToMove))
             {
+                PieceType capture;
+                enemies.TryGetValue(attack, out capture);
                 yield return new Move() {
                     WhiteMove = whiteToMove,
                     Source = knight,
                     Target = attack,
                     Type = MoveType.Normal,
                     Moved = PieceType.Knight,
-                    Captured = enemies.ContainsKey(attack)
-                                ? enemies[attack]
-                                : PieceType.None,
+                    Captured = capture,
                     Previous = previous
                 };
             }
@@ -177,15 +172,15 @@ public partial class Engine
         {
             foreach (int attack in BishopAttacks(bishop, whiteToMove))
             {
+                PieceType capture;
+                enemies.TryGetValue(attack, out capture);
                 yield return new Move() {
                     WhiteMove = whiteToMove,
                     Source = bishop,
                     Target = attack,
                     Type = MoveType.Normal,
                     Moved = PieceType.Bishop,
-                    Captured = enemies.ContainsKey(attack)
-                                ? enemies[attack]
-                                : PieceType.None,
+                    Captured = capture,
                     Previous = previous
                 };
             }
@@ -195,15 +190,15 @@ public partial class Engine
         {
             foreach (int attack in RookAttacks(rook, whiteToMove))
             {
+                PieceType capture;
+                enemies.TryGetValue(attack, out capture);
                 yield return new Move() {
                     WhiteMove = whiteToMove,
                     Source = rook,
                     Target = attack,
                     Type = MoveType.Normal,
                     Moved = allies[rook],
-                    Captured = enemies.ContainsKey(attack)
-                                ? enemies[attack]
-                                : PieceType.None,
+                    Captured = capture,
                     Promotion = allies[rook]==PieceType.VirginRook
                                  ? PieceType.Rook
                                  : PieceType.None,
@@ -216,34 +211,30 @@ public partial class Engine
         {
             foreach (int attack in QueenAttacks(queen, whiteToMove))
             {
-                // UnityEngine.Debug.Log(attack);
-                PieceType capture = enemies.ContainsKey(attack)
-                                     ? enemies[attack]
-                                     : PieceType.None;
+                PieceType capture;
+                enemies.TryGetValue(attack, out capture);
                 yield return new Move() {
                     WhiteMove = whiteToMove,
                     Source = queen,
                     Target = attack,
                     Type = MoveType.Normal,
                     Moved = PieceType.Queen,
-                    Captured = enemies.ContainsKey(attack)
-                                ? enemies[attack]
-                                : PieceType.None,
+                    Captured = capture,
                     Previous = previous
                 };
             }
         }
         foreach (int attack in KingAttacks(king, whiteToMove))
         {
+            PieceType capture;
+            enemies.TryGetValue(attack, out capture);
             yield return new Move() {
                 WhiteMove = whiteToMove,
                 Source = king,
                 Target = attack,
                 Type = MoveType.Normal,
                 Moved = allies[king],
-                Captured = enemies.ContainsKey(attack)
-                            ? enemies[attack]
-                            : PieceType.None,
+                Captured = capture,
                 Promotion = allies[king]==PieceType.VirginKing
                              ? PieceType.King
                              : PieceType.None,
@@ -279,7 +270,7 @@ public partial class Engine
     private void AddPiece(PieceType type, int pos, bool white)
     {
         if (Occupied(pos))
-            throw new Exception("occupado");
+            throw new Exception(pos + " occupado");
 
         if (white)
         {
@@ -311,9 +302,8 @@ public partial class Engine
     private void RemovePiece(PieceType type, int pos, bool white)
     {
         if (!Occupied(pos))
-            throw new Exception("no piece here");
+            throw new Exception(pos + " no piece here");
 
-        // occupancy.Remove(pos);
         if (white)
         {
             if (type == PieceType.Pawn
@@ -344,10 +334,6 @@ public partial class Engine
 
     private void PlayMove(Move move)
     {
-        if (move.Type == MoveType.Castle)
-        {
-            throw new Exception("TODO:");
-        }
         // capture target
         if (move.Captured != PieceType.None)
         {
@@ -363,7 +349,18 @@ public partial class Engine
 
         // move source
         RemovePiece(move.Moved, move.Source, move.WhiteMove);
-        if (move.Promotion != PieceType.None)
+        if (move.Type == MoveType.Castle)
+        {
+            RemovePiece(PieceType.VirginRook, move.Target, move.WhiteMove);
+
+            int rank = GetRank(move.Source);
+            bool left = move.Source > move.Target;
+            int castledKing = GetCastledPos(move.Source, left, move.WhiteMove);
+            int castledRook = left? castledKing+1 : castledKing-1;
+            AddPiece(PieceType.King, castledKing, move.WhiteMove);
+            AddPiece(PieceType.Rook, castledRook, move.WhiteMove);
+        }
+        else if (move.Promotion != PieceType.None)
         {
             AddPiece(move.Promotion, move.Target, move.WhiteMove);
         }
@@ -374,12 +371,19 @@ public partial class Engine
     }
     private void UndoMove(Move move)
     {
+        // move back source
         if (move.Type == MoveType.Castle)
         {
-            throw new Exception("TODO:");
+            int rank = GetRank(move.Source);
+            bool left = move.Source > move.Target;
+            int castledKing = GetCastledPos(move.Source, left, move.WhiteMove);
+            int castledRook = left? castledKing+1 : castledKing-1;
+            RemovePiece(PieceType.King, castledKing, move.WhiteMove);
+            RemovePiece(PieceType.Rook, castledRook, move.WhiteMove);
+
+            AddPiece(PieceType.VirginRook, move.Target, move.WhiteMove);
         }
-        // move back source
-        if (move.Promotion != PieceType.None)
+        else if (move.Promotion != PieceType.None)
         {
             RemovePiece(move.Promotion, move.Target, move.WhiteMove);
         }
@@ -389,7 +393,7 @@ public partial class Engine
         }
         AddPiece(move.Moved, move.Source, move.WhiteMove);
 
-        // capture target
+        // release captured
         if (move.Captured != PieceType.None)
         {
             if (move.Type == MoveType.EnPassant)

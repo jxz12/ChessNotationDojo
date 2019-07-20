@@ -16,13 +16,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] List<Button> files; // TODO: change this to be variable based on board size
     [SerializeField] List<Button> ranks;
 
-	List<string> moves = new List<string>();
-	[SerializeField] string moveSheet;
-
     private Engine thomas;
     void Awake()
     {
-        thomas = new Engine(ranks.Count, files.Count);
+        thomas = new Engine();
     }
 
     private HashSet<string> allCandidates;
@@ -90,13 +87,13 @@ public class GameManager : MonoBehaviour
             // print(move + " " + c);
 
             if (c >= 'a' && c <= 'h')
-			{
-				files[c - 'a'].interactable = true;
-			}
+            {
+                files[c - 'a'].interactable = true;
+            }
             else if (c >= '1' && c <= '8') 
-			{
-				ranks[c - '1'].interactable = true;
-			}
+            {
+                ranks[c - '1'].interactable = true;
+            }
             else if (c == 'N') N.interactable = true;
             else if (c == 'B') B.interactable = true;
             else if (c == 'R') R.interactable = true;
@@ -115,14 +112,26 @@ public class GameManager : MonoBehaviour
         {
             bool check = thomas.PlayMoveAlgebraic(candidate);
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
-			WriteMoveSheet(check);
-            candidate = "";
+            WriteMove(check);
             Display();
         }
         ShowPossibleChars();
     }
-	void WriteMoveSheet(bool check)
-	{
+    void UndoMove()
+    {
+        if (moves.Count > 0)
+        {
+            thomas.UndoLastMove();
+            allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+            moves.Pop();
+            Display();
+            ShowPossibleChars();
+        }
+    }
+
+    Stack<string> moves = new Stack<string>();
+    void WriteMove(bool check)
+    {
         if (check && allCandidates.Count == 0) // checkmate
         {
             candidate += '#';
@@ -144,22 +153,27 @@ public class GameManager : MonoBehaviour
             candidate += " ½-½";
         }
         // print(candidate);
-        moves.Add(candidate);
-
-		var sb = new StringBuilder(moves[0]);
-		for (int i=1; i<moves.Count; i++)
-		{
-			if (i%2 == 1)
-			{
-				sb.Append(' ').Append(moves[i]);
-			}
-			else
-			{
-				sb.Append(';').Append(moves[i]);
-			}
-		}
-		moveSheet = sb.ToString();
-	}
+        moves.Push(candidate);
+        candidate = "";
+    }
+    string MovesToString()
+    {
+        var sb = new StringBuilder();
+        int i=0;
+        foreach (string move in moves)
+        {
+            if (i%2 == 1)
+            {
+                sb.Append(' ').Append(move);
+            }
+            else
+            {
+                if (i != 0) sb.Append(';');
+                sb.Append(move);
+            }
+        }
+        return sb.ToString();
+    }
     void UndoChar()
     {
         if (candidate.Length == 0)
@@ -170,7 +184,21 @@ public class GameManager : MonoBehaviour
     }
     void ReadCharFromKeyboard()
     {
-        if (Input.GetKeyDown(KeyCode.Backspace)) UndoChar();
+
+        if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        {
+            if (Input.GetKeyDown(KeyCode.Backspace)) UndoMove();
+            else if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
+            else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
+            else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
+            else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
+            else if (Input.GetKeyDown(KeyCode.K) && K.interactable) InputChar('K');
+            else if (Input.GetKeyDown(KeyCode.Comma) && O_O_O.interactable) InputChar('<');
+            else if (Input.GetKeyDown(KeyCode.Period) && O_O.interactable) InputChar('>');
+        }
+        else if (Input.GetKeyDown(KeyCode.Backspace)) UndoChar();
+        else if (Input.GetKeyDown(KeyCode.X) && x.interactable) InputChar('x');
+        else if (Input.GetKeyDown(KeyCode.Equals) && eq.interactable) InputChar('=');
 
         else if (Input.GetKeyDown(KeyCode.A) && files[0].interactable) InputChar('a');
         else if (Input.GetKeyDown(KeyCode.B) && files[1].interactable) InputChar('b');
@@ -189,19 +217,6 @@ public class GameManager : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Alpha6) && ranks[5].interactable) InputChar('6');
         else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
         else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
-
-        else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-        {
-            if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
-            else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
-            else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
-            else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
-            else if (Input.GetKeyDown(KeyCode.K) && K.interactable) InputChar('K');
-        }
-        else if (Input.GetKeyDown(KeyCode.X) && x.interactable) InputChar('x');
-        else if (Input.GetKeyDown(KeyCode.Equals) && eq.interactable) InputChar('=');
-        else if (Input.GetKeyDown(KeyCode.Home) && O_O.interactable) InputChar('>');
-        else if (Input.GetKeyDown(KeyCode.End) && O_O_O.interactable) InputChar('<');
     }
 
     void ClearBoard()
@@ -213,15 +228,15 @@ public class GameManager : MonoBehaviour
     }
     void DisplayPiece(int position, string letter, Color colour)
     {
-		squares[position].color = colour;
-		squares[position].text = letter;
+        squares[position].color = colour;
+        squares[position].text = letter;
     }
     void DisplayPieces(IEnumerable<int> positions, string letter, Color colour)
     {
         foreach (int i in positions)
         {
-			squares[i].color = colour;
-			squares[i].text = letter;
+            squares[i].color = colour;
+            squares[i].text = letter;
         }
     }
     void Display()

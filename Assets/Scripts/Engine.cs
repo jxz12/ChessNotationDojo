@@ -9,8 +9,8 @@ using System.Text;
 
 public partial class Engine
 {
-    public static int nRanks = 8;
-    public static int nFiles = 8;
+    public int nRanks { get; private set; } = 8;
+    public int nFiles { get; private set; } = 8;
 
     // board state
     public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int> { 8,9,10,11,12,13,14,15 };
@@ -18,24 +18,25 @@ public partial class Engine
     public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int> { 1,6 };
     public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int> { 2,5 };
     public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int> { 3 };
+    public int WhiteKing             { get; private set; } = 4;
 
     public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int> { 48,49,50,51,52,53,54,55 };
     public HashSet<int> BlackRooks   { get; private set; } = new HashSet<int> { 56,63 };
     public HashSet<int> BlackKnights { get; private set; } = new HashSet<int> { 57,62 };
     public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> { 58,61 };
     public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 59 };
-
-    public int WhiteKing             { get; private set; } = 4;
     public int BlackKing             { get; private set; } = 60;
+
     // for where castled kings go
     public int WhiteLeftCastledFile  { get; private set; } = 2;
     public int WhiteRightCastledFile { get; private set; } = 6;
     public int BlackLeftCastledFile  { get; private set; } = 2;
     public int BlackRightCastledFile { get; private set; } = 6;
     
-    public enum MoveType : byte { None, Normal, Castle, EnPassant };
-    public enum PieceType : byte { None, Pawn, Rook, Knight, Bishop, Queen, King,
-                                         VirginPawn, VirginRook, VirginKing }; // for castling, en passant etc.
+    public enum MoveType { None=0, Normal, Castle, EnPassant };
+    public enum PieceType { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
+                                           VirginPawn, VirginRook, VirginKing };
+                                           // for castling, en passant etc.
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
@@ -68,21 +69,34 @@ public partial class Engine
     // for checking captures
     private Dictionary<int, PieceType> whiteOccupancy, blackOccupancy;
 
-    // top of game tree
-    private Move root;
     // current to evaluate
     private Move current;
+    Dictionary<string, Move> legalMoves;
 
-    public Engine(int ranks=8, int files=8)
+    public Engine()
     {
-        nRanks = ranks;
-        nFiles = files;
-
         InitOccupancy();
 
-        root = new Move();
-        current = root;
+        current = new Move();
+        legalMoves = FindLegalMoves(current);
     }
+    // for other game types
+    // public Engine(int ranks, int files,
+    //               IEnumerable<int> whitePawns, IEnumerable<int> blackPawns,
+    //               IEnumerable<int> whiteRooks, IEnumerable<int> blackRooks,
+    //               IEnumerable<int> whiteKnights, IEnumerable<int> blackKnights,
+    //               IEnumerable<int> whiteBishops, IEnumerable<int> blackBishops,
+    //               IEnumerable<int> whiteQueens, IEnumerable<int> blackQueens,
+    //               int whiteKing, int blackKing,
+    //               int whiteLeftCastledFile, int blackLeftCastledFile,
+    //               int whiteRightCastledFile, int blackRightCastledFile)
+    // {
+    //     nRanks = ranks;
+    //     nFiles = files;
+    //     WhitePawns = new HashSet<int>(whitePawns);
+    //     BlackPawns = new HashSet<int>(blackPawns);
+    // }
+
     private void InitOccupancy()
     {
         whiteOccupancy = new Dictionary<int, PieceType>();
@@ -102,7 +116,7 @@ public partial class Engine
         blackOccupancy[BlackKing] = PieceType.VirginKing;
     }
     
-
+    // convenience functions
     private int GetFile(int pos)
     {
         return pos % nFiles;
@@ -120,7 +134,7 @@ public partial class Engine
         return whiteOccupancy.ContainsKey(pos) || blackOccupancy.ContainsKey(pos);
     }
 
-    // for bishops, rooks, queens
+    // for finding candidate bishop, rook, queen moves
     private IEnumerable<int> SliderAttacks(int slider, int fileSlide, int rankSlide, bool whiteToMove)
     {
         int startFile = GetFile(slider);
@@ -166,7 +180,7 @@ public partial class Engine
         return       BishopAttacks(queen, whiteToMove)
                .Concat(RookAttacks(queen, whiteToMove));
     }
-    // for knights, kings, pawns (one move)
+    // for candidate knight, king, pawn moves
     private IEnumerable<int> HopperAttack(int hopper, int fileHop, int rankHop, bool whiteToMove)
     {
         int startFile = GetFile(hopper);
@@ -219,35 +233,71 @@ public partial class Engine
                .Concat(HopperAttack(king, -1,  0, whiteToMove))
                .Concat(HopperAttack(king, -1, -1, whiteToMove));
     }
-    private PieceType AllyRaycast(int source, int fileSlide, int rankSlide, bool whiteToMove)
+
+    // all for castling
+    private int FindVirginRook(int source, bool left, bool whiteToMove)
     {
         int startFile = GetFile(source);
         int startRank = GetRank(source);
+        int fileSlide = left? -1 : 1;
         int targetFile = startFile + fileSlide;
-        int targetRank = startRank + rankSlide;
-        int targetPos = GetPos(targetFile, targetRank);
+        int targetPos = GetPos(targetFile, startRank);
 
-        while (targetFile >= 0 && targetFile < nFiles &&
-               targetRank >= 0 && targetRank < nRanks)
+        while (targetFile >= 0 && targetFile < nFiles)
         {
             if (Occupied(targetPos))
             {
                 var allies = whiteToMove? whiteOccupancy
                                         : blackOccupancy;
-                return allies.ContainsKey(targetPos)
-                        ? allies[targetPos]
-                        : PieceType.None;
+                PieceType ally;
+                allies.TryGetValue(targetPos, out ally);
+                return ally==PieceType.VirginRook? targetPos 
+                                                 : -1;
             }
             targetFile += fileSlide;
-            targetRank += rankSlide;
-            targetPos = GetPos(targetFile, targetRank);
+            targetPos = GetPos(targetFile, startRank);
         }
-        return PieceType.None;
+        return -1;
     }
-    // private bool FileRangeFree(int fileMin, int fileMax, int rank)
-    // {
-    //     return true;
-    // }
+    private int GetCastledPos(int king, bool left, bool whiteToMove)
+    {
+        int rank = GetRank(king);
+        int file;
+        if (whiteToMove)
+        {
+            if (left) file = WhiteLeftCastledFile;
+            else      file = WhiteRightCastledFile;
+        }
+        else
+        {
+            if (left) file = BlackLeftCastledFile;
+            else      file = BlackRightCastledFile;
+        }
+        return GetPos(file, rank);
+    }
+    private bool FindCastlingRook(int king, bool left, bool whiteToMove, out int virginRook)
+    {
+        virginRook = FindVirginRook(king, left, whiteToMove);
+        if (virginRook < 0)
+            return false;
+        int castledPos = GetCastledPos(king, left, whiteToMove);
+        if (castledPos < 0)
+            return false;
+        
+        // check whether all squares involved are free
+        int leftmostPos = left? Math.Min(virginRook, castledPos)
+                              : Math.Min(castledPos-1, king);
+        int rightmostPos = left? Math.Max(castledPos+1, king)
+                               : Math.Max(virginRook, castledPos);
+
+        var allies = whiteToMove? whiteOccupancy : blackOccupancy;
+        for (int pos=leftmostPos; pos<=rightmostPos; pos++)
+        {
+            if (pos!=king && pos!=virginRook && Occupied(pos))
+                return false;
+        }
+        return true;
+    }
 
     ///////////////////////////////////
     // for interface from the outside
@@ -289,7 +339,6 @@ public partial class Engine
             else if (move.Moved == PieceType.King
                      || move.Moved == PieceType.VirginKing) sb.Append('K');
 
-            // TODO: Source ambiguity
             if (move.Captured != PieceType.None) sb.Append('x');
 
             sb.Append((char)('a'+(move.Target%nFiles)));
@@ -298,50 +347,135 @@ public partial class Engine
         // UnityEngine.Debug.Log(sb.ToString());
         return sb.ToString();
     }
-    public IEnumerable<string> GetLegalMovesAlgebraic()
+    private Dictionary<string, Move> FindLegalMoves(Move previous)
     {
+        var pseudolegal = new List<Move>(PseudoLegalMoves(current));
+        var ambiguous = new Dictionary<string, List<Move>>();
         // check if legal
-        var nextMoves = new List<Move>(PseudoLegalMoves(current));
-        foreach (Move next in nextMoves)
+        foreach (Move next in pseudolegal)
         {
-            // UnityEngine.Debug.Log("n: " + Algebraic(next));
             PlayMove(next);
             bool legal = true;
-            foreach (Move nextnext in PseudoLegalMoves(next))
+
+            if (next.Type != MoveType.Castle)
             {
-                // UnityEngine.Debug.Log("nn: " + Algebraic(nextnext));
-                // TODO: castling
-                if (nextnext.Captured == PieceType.King
-                    || nextnext.Captured == PieceType.VirginKing)
+                // simply check for king being captured
+                foreach (Move nextnext in PseudoLegalMoves(next))
                 {
-                    // UnityEngine.Debug.Log("NO");
-                    legal = false;
-                    break;
+                    if (nextnext.Captured == PieceType.King
+                        || nextnext.Captured == PieceType.VirginKing)
+                    {
+                        legal = false;
+                        break;
+                    }
                 }
             }
-            if (legal)
+            else // need to check all squares moved through
             {
-                yield return Algebraic(next);
+                var kingSquares = new HashSet<int>();
+                int kingBefore = next.Source;
+                int kingAfter = next.WhiteMove? WhiteKing : BlackKing;
+
+                if (kingBefore > kingAfter) // move left
+                {
+                    for (int pos=kingBefore; pos>kingAfter; pos--)
+                        kingSquares.Add(pos);
+                }
+                else
+                {
+                    for (int pos=kingBefore; pos<kingAfter; pos++)
+                        kingSquares.Add(pos);
+                }
+                foreach (Move nextnext in PseudoLegalMoves(next))
+                {
+                    if (nextnext.Captured == PieceType.King
+                        || nextnext.Captured == PieceType.VirginKing
+                        || (next.Type == MoveType.Castle
+                            && kingSquares.Contains(nextnext.Target)))
+                    {
+                        legal = false;
+                        break;
+                    }
+                }
             }
             UndoMove(next);
+
+            if (legal)
+            {
+                string algebraic = Algebraic(next);
+                if (ambiguous.ContainsKey(algebraic))
+                {
+                    ambiguous[algebraic].Add(next);
+                }
+                else
+                {
+                    ambiguous[algebraic] = new List<Move> { next };
+                }
+            }
         }
+        var unambiguous = new Dictionary<string, Move>();
+        foreach (string algebraic in ambiguous.Keys)
+        {
+            if (ambiguous[algebraic].Count == 1) // unambiguous
+            {
+                unambiguous[algebraic] = ambiguous[algebraic][0];
+            }
+            else
+            {
+                // ambiguous
+                foreach (Move move in ambiguous[algebraic])
+                {
+                    // check which coordinates (file/rank) clash
+                    int file = GetFile(move.Source);
+                    int rank = GetRank(move.Source);
+                    bool repeatFile = false;
+                    bool repeatRank = false;
+                    foreach (Move clash in ambiguous[algebraic].Where(x=> x!=move))
+                    {
+                        repeatFile |= file == GetFile(clash.Source);
+                        repeatRank |= rank == GetRank(clash.Source);
+                    }
+                    // if no shared file, use file
+                    string disambiguated;
+                    if (!repeatFile)
+                    {
+                        disambiguated = algebraic.Insert(1, ((char)('a'+file)).ToString());
+                    }
+                    else if (!repeatRank) // use rank
+                    {
+                        disambiguated = algebraic.Insert(1, ((char)('1'+rank)).ToString());
+                    }
+                    else // use both
+                    {
+                        disambiguated = algebraic.Insert(1, ((char)('a'+file)).ToString()
+                                                            + ((char)('1'+rank)).ToString());
+                    }
+                    unambiguous[disambiguated] = move;
+                }
+            }
+        }
+        return unambiguous;
+    }
+    public IEnumerable<string> GetLegalMovesAlgebraic()
+    {
+        return legalMoves.Keys;
     }
 
     // returns if check
-    // may perform illegal move if asked to!
-    public bool PlayMoveAlgebraic(string todo)
+    public bool PlayMoveAlgebraic(string algebraic)
     {
-        foreach (Move next in PseudoLegalMoves(current))
+        Move next;
+        if (legalMoves.TryGetValue(algebraic, out next))
         {
-            // UnityEngine.Debug.Log(Algebraic(next));
-            if (Algebraic(next) == todo)
-            {
-                PlayMove(next);
-                current = next;
-                return Check();
-            }
+            PlayMove(next);
+            current = next;
+            legalMoves = FindLegalMoves(current);
+            return Check();
         }
-        throw new Exception("No moves possible!");
+        else
+        {
+            throw new Exception("move not evaluated as legal");
+        }
     }
     private bool Check()
     {
