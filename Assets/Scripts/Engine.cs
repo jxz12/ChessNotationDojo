@@ -11,7 +11,6 @@ public partial class Engine
 {
     public static int nRanks = 8;
     public static int nFiles = 8;
-    private Move previous { get; set; } = null;
 
     // board state
     public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int> { 8,9,10,11,12,13,14,15 };
@@ -29,28 +28,29 @@ public partial class Engine
     public int WhiteKing             { get; private set; } = 4;
     public int BlackKing             { get; private set; } = 60;
     // for where castled kings go
-    public int WhiteShortCastledKing { get; private set; } = 6;
-    public int WhiteLongCastledKing  { get; private set; } = 2;
-    public int BlackShortCastledKing { get; private set; } = 62;
-    public int BlackLongCastledKing  { get; private set; } = 58;
+    public int WhiteLeftCastledFile  { get; private set; } = 2;
+    public int WhiteRightCastledFile { get; private set; } = 6;
+    public int BlackLeftCastledFile  { get; private set; } = 2;
+    public int BlackRightCastledFile { get; private set; } = 6;
     
-    // allow for empty moves for analysis
-    public enum MoveType : byte { Normal, Castle, EnPassant };
-    public enum PieceType : byte { None, Pawn, Rook, Knight, Bishop, Queen, King };
+    public enum MoveType : byte { None, Normal, Castle, EnPassant };
+    public enum PieceType : byte { None, Pawn, Rook, Knight, Bishop, Queen, King,
+                                         VirginPawn, VirginRook, VirginKing }; // for castling, en passant etc.
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
     private class Move
     {
+        public Move Previous = null;
         public bool WhiteMove { get; set; } = false;
         public int Source { get; set; } = 0;
         public int Target { get; set; } = 0;
-        public MoveType Type { get; set; } = MoveType.Normal;
+        public MoveType Type { get; set; } = MoveType.None;
         public PieceType Moved { get; set; } = PieceType.None;
         public PieceType Captured { get; set; } = PieceType.None;
         public PieceType Promotion { get; set; } = PieceType.None;
 
-        public Move DeepCopy()
+        public Move DeepCopy() // to make promotion simpler
         {
             var copy = new Move() {
                 WhiteMove = WhiteMove,
@@ -65,16 +65,13 @@ public partial class Engine
         }
     }
 
-    // for puush
-    private HashSet<int> whitePawnsInit, blackPawnsInit;
-    // for checking blocks
-    private HashSet<int> occupancy;
     // for checking captures
     private Dictionary<int, PieceType> whiteOccupancy, blackOccupancy;
 
-    // attack tables
-    private int[] whiteAttackTable;
-    private int[] blackAttackTable;
+    // top of game tree
+    private Move root;
+    // current to evaluate
+    private Move current;
 
     public Engine(int ranks=8, int files=8)
     {
@@ -82,34 +79,27 @@ public partial class Engine
         nFiles = files;
 
         InitOccupancy();
-        InitAttackTables();
 
-        previous = new Move();
+        root = new Move();
+        current = root;
     }
     private void InitOccupancy()
     {
-        whitePawnsInit = new HashSet<int>(WhitePawns);
-        blackPawnsInit = new HashSet<int>(BlackPawns);
-
         whiteOccupancy = new Dictionary<int, PieceType>();
-        foreach (int pos in WhitePawns)   whiteOccupancy[pos] = PieceType.Pawn;
-        foreach (int pos in WhiteRooks)   whiteOccupancy[pos] = PieceType.Rook;
+        foreach (int pos in WhitePawns)   whiteOccupancy[pos] = PieceType.VirginPawn;
+        foreach (int pos in WhiteRooks)   whiteOccupancy[pos] = PieceType.VirginRook;
         foreach (int pos in WhiteKnights) whiteOccupancy[pos] = PieceType.Knight;
         foreach (int pos in WhiteBishops) whiteOccupancy[pos] = PieceType.Bishop;
         foreach (int pos in WhiteQueens)  whiteOccupancy[pos] = PieceType.Queen;
-        whiteOccupancy[WhiteKing] = PieceType.King;
+        whiteOccupancy[WhiteKing] = PieceType.VirginKing;
         
         blackOccupancy = new Dictionary<int, PieceType>();
-        foreach (int pos in BlackPawns)   blackOccupancy[pos] = PieceType.Pawn;
-        foreach (int pos in BlackRooks)   blackOccupancy[pos] = PieceType.Rook;
+        foreach (int pos in BlackPawns)   blackOccupancy[pos] = PieceType.VirginPawn;
+        foreach (int pos in BlackRooks)   blackOccupancy[pos] = PieceType.VirginRook;
         foreach (int pos in BlackKnights) blackOccupancy[pos] = PieceType.Knight;
         foreach (int pos in BlackBishops) blackOccupancy[pos] = PieceType.Bishop;
         foreach (int pos in BlackQueens)  blackOccupancy[pos] = PieceType.Queen;
-        blackOccupancy[BlackKing] = PieceType.King;
-
-        occupancy = new HashSet<int>();
-        occupancy.UnionWith(whiteOccupancy.Keys);
-        occupancy.UnionWith(blackOccupancy.Keys);
+        blackOccupancy[BlackKing] = PieceType.VirginKing;
     }
     
 
@@ -125,6 +115,10 @@ public partial class Engine
     {
         return rank * nFiles + file;
     }
+    private bool Occupied(int pos)
+    {
+        return whiteOccupancy.ContainsKey(pos) || blackOccupancy.ContainsKey(pos);
+    }
 
     // for bishops, rooks, queens
     private IEnumerable<int> SliderAttacks(int slider, int fileSlide, int rankSlide, bool whiteToMove)
@@ -137,10 +131,9 @@ public partial class Engine
 
         while (targetFile >= 0 && targetFile < nFiles &&
                targetRank >= 0 && targetRank < nRanks &&
-               !occupancy.Contains(targetPos))
+               !Occupied(targetPos))
         {
             yield return targetPos;
-
             targetFile += fileSlide;
             targetRank += rankSlide;
             targetPos = GetPos(targetFile, targetRank);
@@ -226,172 +219,40 @@ public partial class Engine
                .Concat(HopperAttack(king, -1,  0, whiteToMove))
                .Concat(HopperAttack(king, -1, -1, whiteToMove));
     }
-
-    public IEnumerable<int> FindAnyThreats(int threatened, bool whiteToMove)
+    private PieceType AllyRaycast(int source, int fileSlide, int rankSlide, bool whiteToMove)
     {
-        var enemies = whiteToMove? blackOccupancy : whiteOccupancy;
+        int startFile = GetFile(source);
+        int startRank = GetRank(source);
+        int targetFile = startFile + fileSlide;
+        int targetRank = startRank + rankSlide;
+        int targetPos = GetPos(targetFile, targetRank);
 
-        // attacks are bidirectional, so attack = threat
-        return PawnAttacks(threatened, whiteToMove)
-                   .Where(x=> enemies[x]==PieceType.Pawn)
-               .Concat(KnightAttacks(threatened, whiteToMove))
-                   .Where(x=> enemies[x]==PieceType.Knight)
-               .Concat(BishopAttacks(threatened, whiteToMove))
-                   .Where(x=> enemies[x]==PieceType.Bishop
-                           || enemies[x]==PieceType.Queen)
-               .Concat(RookAttacks(threatened, whiteToMove))
-                   .Where(x=> enemies[x]==PieceType.Rook
-                           || enemies[x]==PieceType.Queen)
-               .Concat(KingAttacks(threatened, whiteToMove))
-                   .Where(x=> enemies[x]==PieceType.King);
+        while (targetFile >= 0 && targetFile < nFiles &&
+               targetRank >= 0 && targetRank < nRanks)
+        {
+            if (Occupied(targetPos))
+            {
+                var allies = whiteToMove? whiteOccupancy
+                                        : blackOccupancy;
+                return allies.ContainsKey(targetPos)
+                        ? allies[targetPos]
+                        : PieceType.None;
+            }
+            targetFile += fileSlide;
+            targetRank += rankSlide;
+            targetPos = GetPos(targetFile, targetRank);
+        }
+        return PieceType.None;
     }
-
-    // public IEnumerable<int> FindPinned(int pinned, int fileSlide, int rankSlide, bool whiteToMove)
+    // private bool FileRangeFree(int fileMin, int fileMax, int rank)
     // {
-    //     int startFile = GetFile(pinned);
-    //     int startRank = GetRank(pinned);
-    //     int targetFile = startFile + fileSlide;
-    //     int targetRank = startRank + rankSlide;
-    //     int targetPos = GetPos(targetFile, targetRank);
-
-    //     int potentialPinned = -1;
-
-    //     while (targetFile >= 0 && targetFile < nFiles &&
-    //            targetRank >= 0 && targetRank < nRanks)
-    //     {
-    //         if (potentialPinned == -1) // find friend piece first
-    //         {
-    //             if (occupancy.Contains(targetPos))
-    //             {
-    //                 var friends = whiteToMove? whiteOccupancy : blackOccupancy;
-    //                 if (friends.ContainsKey(targetPos))
-    //                 {
-    //                     potentialPinned = targetPos;
-    //                 }
-    //                 else
-    //                 {
-    //                     yield break;
-    //                 }
-    //             }
-    //         }
-    //         else // then enemy
-    //         {
-    //             if (occupancy.Contains(targetPos))
-    //             {
-    //                 var enemies = whiteToMove? blackOccupancy : whiteOccupancy;
-    //                 if (enemies.ContainsKey(targetPos))
-    //                 {
-    //                     yield return potentialPinned;
-    //                 }
-    //                 else
-    //                 {
-    //                     yield break;
-    //                 }
-    //             }
-    //         }
-    //         targetFile += fileSlide;
-    //         targetRank += rankSlide;
-    //         targetPos = GetPos(targetFile, targetRank);
-    //     }
+    //     return true;
     // }
-    // public IEnumerable<int> FindAllPinned(int pinnedTo, bool whiteToMove)
-    // {
-    //     // bishops
-    //     var enemies = whiteToMove? blackOccupancy : whiteOccupancy;
-
-    //            // diagonal
-    //     return FindPinned(pinnedTo,  1,  1, whiteToMove)
-    //                .Where(x=> enemies[x]==PieceType.Bishop
-    //                        || enemies[x]==PieceType.Queen)
-    //            .Concat(FindPinned(pinnedTo,  1, -1, whiteToMove))
-    //                .Where(x=> enemies[x]==PieceType.Bishop
-    //                        || enemies[x]==PieceType.Queen)
-    //            .Concat(FindPinned(pinnedTo, -1, -1, whiteToMove))
-    //                .Where(x=> enemies[x]==PieceType.Bishop
-    //                        || enemies[x]==PieceType.Queen)
-    //            .Concat(FindPinned(pinnedTo, -1,  1, whiteToMove))
-    //                .Where(x=> enemies[x]==PieceType.Bishop
-    //                        || enemies[x]==PieceType.Queen)
-
-    //            // horizontal/vertical
-    //            .Concat(FindPinned(pinnedTo,  0,  1, whiteToMove))
-    //                .Where(x=> enemies[x]==PieceType.Rook
-    //                        || enemies[x]==PieceType.Queen)
-    //            .Concat(FindPinned(pinnedTo,  1,  0, whiteToMove))
-    //                .Where(x=> enemies[x]==PieceType.Rook
-    //                        || enemies[x]==PieceType.Queen)
-    //            .Concat(FindPinned(pinnedTo,  0, -1, whiteToMove))
-    //                .Where(x=> enemies[x]==PieceType.Rook
-    //                        || enemies[x]==PieceType.Queen)
-    //            .Concat(FindPinned(pinnedTo, -1,  0, whiteToMove))
-    //                .Where(x=> enemies[x]==PieceType.Rook
-    //                        || enemies[x]==PieceType.Queen);
-    // }
-
-
-    private void InitAttackTables() // relies on occupancy being filled in
-    {
-        whiteAttackTable = new int[nFiles*nRanks];
-        blackAttackTable = new int[nFiles*nRanks];
-
-        foreach (int pawn in WhitePawns)
-            foreach (int attack in PawnAttacks(pawn, true))
-                whiteAttackTable[attack] += 1;
-        foreach (int pawn in BlackPawns)
-            foreach (int attack in PawnAttacks(pawn, false))
-                blackAttackTable[attack] += 1;
-
-        foreach (int knight in WhiteKnights)
-            foreach (int attack in KnightAttacks(knight, true))
-                whiteAttackTable[attack] += 1;
-        foreach (int knight in BlackKnights)
-            foreach (int attack in KnightAttacks(knight, false))
-                blackAttackTable[attack] += 1;
-
-        foreach (int bishop in WhiteBishops)
-            foreach (int attack in BishopAttacks(bishop, true))
-                whiteAttackTable[attack] += 1;
-        foreach (int bishop in BlackBishops)
-            foreach (int attack in BishopAttacks(bishop, false))
-                blackAttackTable[attack] += 1;
-
-        foreach (int rook in WhiteRooks)
-            foreach (int attack in RookAttacks(rook, true))
-                whiteAttackTable[attack] += 1;
-        foreach (int rook in BlackBishops)
-            foreach (int attack in RookAttacks(rook, false))
-                blackAttackTable[attack] += 1;
-
-        foreach (int queen in WhiteQueens)
-            foreach (int attack in QueenAttacks(queen, true))
-                whiteAttackTable[attack] += 1;
-        foreach (int queen in BlackQueens)
-            foreach (int attack in QueenAttacks(queen, false))
-                blackAttackTable[attack] += 1;
-
-        foreach (int attack in KingAttacks(WhiteKing, true))
-            whiteAttackTable[attack] += 1;
-        foreach (int attack in KingAttacks(BlackKing, false))
-            blackAttackTable[attack] += 1;
-
-        // UnityEngine.Debug.Log("white");
-        // for (int i=0; i<whiteAttackTable.Length; i++)
-        // {
-        //     if (whiteAttackTable[i] != 0)
-        //         UnityEngine.Debug.Log(i+" "+whiteAttackTable[i]);
-        // }
-        // UnityEngine.Debug.Log("black");
-        // for (int i=0; i<blackAttackTable.Length; i++)
-        // {
-        //     if (blackAttackTable[i] != 0)
-        //         UnityEngine.Debug.Log(i+" "+blackAttackTable[i]);
-        // }
-    }
 
     ///////////////////////////////////
     // for interface from the outside
 
-    private string GetAlgebraic(Move move)
+    private string Algebraic(Move move)
     {
         var sb = new StringBuilder();
         if (move.Type == MoveType.Castle)
@@ -399,7 +260,8 @@ public partial class Engine
             if (move.Target > move.Source) sb.Append('>');
             else sb.Append('<');
         }
-        else if (move.Moved == PieceType.Pawn)
+        else if (move.Moved == PieceType.Pawn
+                 || move.Moved == PieceType.VirginPawn)
         {
             sb.Append((char)('a'+(move.Source%nFiles)));
             if (move.Captured != PieceType.None)
@@ -407,7 +269,8 @@ public partial class Engine
                 sb.Append('x').Append((char)('a'+(move.Target%nFiles)));
             }
             sb.Append(move.Target/nFiles + 1);
-            if (move.Promotion != PieceType.None)
+            if (move.Promotion != PieceType.None
+                && move.Promotion != PieceType.Pawn)
             {
                 sb.Append('=');
                 if (move.Promotion == PieceType.Rook) sb.Append('R');
@@ -418,11 +281,13 @@ public partial class Engine
         }
         else
         {
-            if (move.Moved == PieceType.Rook) sb.Append('R');
+            if (move.Moved == PieceType.Rook
+                || move.Moved == PieceType.VirginRook) sb.Append('R');
             else if (move.Moved == PieceType.Knight) sb.Append('N');
             else if (move.Moved == PieceType.Bishop) sb.Append('B');
             else if (move.Moved == PieceType.Queen) sb.Append('Q');
-            else if (move.Moved == PieceType.King) sb.Append('K');
+            else if (move.Moved == PieceType.King
+                     || move.Moved == PieceType.VirginKing) sb.Append('K');
 
             // TODO: Source ambiguity
             if (move.Captured != PieceType.None) sb.Append('x');
@@ -430,41 +295,70 @@ public partial class Engine
             sb.Append((char)('a'+(move.Target%nFiles)));
             sb.Append(move.Target/nFiles + 1);
         }
+        // UnityEngine.Debug.Log(sb.ToString());
         return sb.ToString();
     }
-
-    public IEnumerable<string> GetMovesAlgebraic()
+    public IEnumerable<string> GetLegalMovesAlgebraic()
     {
-        var moves = GeneratePseudoLegalMoves();
-        foreach (Move move in moves)
+        // check if legal
+        var nextMoves = new List<Move>(PseudoLegalMoves(current));
+        foreach (Move next in nextMoves)
         {
-            yield return GetAlgebraic(move);
+            // UnityEngine.Debug.Log("n: " + Algebraic(next));
+            PlayMove(next);
+            bool legal = true;
+            foreach (Move nextnext in PseudoLegalMoves(next))
+            {
+                // UnityEngine.Debug.Log("nn: " + Algebraic(nextnext));
+                // TODO: castling
+                if (nextnext.Captured == PieceType.King
+                    || nextnext.Captured == PieceType.VirginKing)
+                {
+                    // UnityEngine.Debug.Log("NO");
+                    legal = false;
+                    break;
+                }
+            }
+            if (legal)
+            {
+                yield return Algebraic(next);
+            }
+            UndoMove(next);
         }
     }
 
     // returns if check
-    public void PerformMoveAlgebraic(string todo)
+    // may perform illegal move if asked to!
+    public bool PlayMoveAlgebraic(string todo)
     {
-        var moves = GeneratePseudoLegalMoves();
-        foreach (Move move in moves)
+        foreach (Move next in PseudoLegalMoves(current))
         {
-            if (GetAlgebraic(move) == todo)
+            // UnityEngine.Debug.Log(Algebraic(next));
+            if (Algebraic(next) == todo)
             {
-                PerformMove(move);
-                return;
+                PlayMove(next);
+                current = next;
+                return Check();
             }
         }
         throw new Exception("No moves possible!");
     }
-    public bool IsCheck()
+    private bool Check()
     {
-        int threatenedKing = previous.WhiteMove? BlackKing : WhiteKing;
-        int[] threatenTable = previous.WhiteMove? whiteAttackTable : blackAttackTable;
-        return threatenTable[threatenedKing] != 0; // check
+        // temporarily assume empty move for black
+        Move empty = new Move() { WhiteMove = !current.WhiteMove };
+        foreach (Move checkTest in PseudoLegalMoves(empty))
+        {
+            if (checkTest.Captured == PieceType.King)
+            {
+                return true;
+            }
+        }
+        return false;
     }
-
     public void UndoLastMove()
     {
-        // TODO:
+        UndoMove(current);
+        current = current.Previous;
     }
 }

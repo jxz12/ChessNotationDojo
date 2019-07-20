@@ -7,13 +7,13 @@ public class GameManager : MonoBehaviour
 {
     // TODO: options to make invisible/pulse
     //       flip board
-    //       record games to text
     //       color schemes
 
+    [SerializeField] GridLayoutGroup board;
     [SerializeField] List<Text> squares; // TODO: change to a class Square and make it any size
     [SerializeField] Button N, B, R, Q, K, x, eq;
     [SerializeField] Button O_O, O_O_O;
-    [SerializeField] List<Button> files;
+    [SerializeField] List<Button> files; // TODO: change this to be variable based on board size
     [SerializeField] List<Button> ranks;
 
 	List<string> moves = new List<string>();
@@ -41,16 +41,18 @@ public class GameManager : MonoBehaviour
         for (int i=0; i<files.Count; i++)
         {
             char input = (char)('a'+i);
-            files[i].onClick.AddListener(()=> InputChar(input)); // lol
+            files[i].onClick.AddListener(()=> InputChar(input));
         }
         for (int i=0; i<ranks.Count; i++)
         {
             char input = (char)('1'+i);
-            ranks[i].onClick.AddListener(()=> InputChar(input)); // lol
+            ranks[i].onClick.AddListener(()=> InputChar(input));
         }
+        // var rect = board.GetComponent<RectTransform>().rect;
+        // board.cellSize = new Vector2(rect.width, rect.height) / 8;
 
         candidate = "";
-        allCandidates = new HashSet<string>(thomas.GetMovesAlgebraic());
+        allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
         ShowPossibleChars();
         Display();
     }
@@ -84,8 +86,8 @@ public class GameManager : MonoBehaviour
             if (move.Length <= idx || move.Substring(0,idx) != candidate)
                 continue;
 
-            // print(move + " " + c);
             char c = move[idx];
+            // print(move + " " + c);
 
             if (c >= 'a' && c <= 'h')
 			{
@@ -111,11 +113,9 @@ public class GameManager : MonoBehaviour
         candidate += input;
         if (allCandidates.Contains(candidate))
         {
-            // print(candidate);
-            thomas.PerformMoveAlgebraic(candidate);
-            allCandidates = new HashSet<string>(thomas.GetMovesAlgebraic());
-			WriteMoveSheet(thomas.IsCheck());
-
+            bool check = thomas.PlayMoveAlgebraic(candidate);
+            allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+			WriteMoveSheet(check);
             candidate = "";
             Display();
         }
@@ -125,24 +125,25 @@ public class GameManager : MonoBehaviour
 	{
         if (check && allCandidates.Count == 0) // checkmate
         {
-            candidate += '+';
+            candidate += '#';
             if (moves.Count%2 == 0)
             {
-                candidate += " 0-1";
+                candidate += " 1-0";
             }
             else
             {
-                candidate += " 1-0";
+                candidate += " 0-1";
             }
         }
         else if (check && allCandidates.Count > 0) // check
         {
-            candidate += '#';
+            candidate += '+';
         }
         else if (!check && allCandidates.Count == 0) // draw
         {
             candidate += " ½-½";
         }
+        // print(candidate);
         moves.Add(candidate);
 
 		var sb = new StringBuilder(moves[0]);
