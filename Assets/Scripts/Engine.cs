@@ -13,18 +13,47 @@ public partial class Engine
     public int nFiles { get; private set; } = 8;
 
     // board state
-    public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int> { 8,9,10,11,12,13,14,15 };
+    // public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int> { 8,9,10,11,12,13,14,15 };
+    // public HashSet<int> WhiteRooks   { get; private set; } = new HashSet<int> { 0,7 };
+    // public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int> { 1,6 };
+    // public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int> { 2,5 };
+    // public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int> { 3 };
+    // public int WhiteKing             { get; private set; } = 4;
+
+    // public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int> { 48,49,50,51,52,53,54,55 };
+    // public HashSet<int> BlackRooks   { get; private set; } = new HashSet<int> { 56,63 };
+    // public HashSet<int> BlackKnights { get; private set; } = new HashSet<int> { 57,62 };
+    // public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> { 58,61 };
+    // public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 59 };
+    // public int BlackKing             { get; private set; } = 60;
+
+    // public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int> {  };
+    // public HashSet<int> WhiteRooks   { get; private set; } = new HashSet<int> { 0,7 };
+    // public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int> {  };
+    // public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int> {  };
+    // public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int> {  };
+    // public int WhiteKing             { get; private set; } = 4;
+
+    // public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int> {  };
+    // public HashSet<int> BlackRooks   { get; private set; } = new HashSet<int> {  };
+    // public HashSet<int> BlackKnights { get; private set; } = new HashSet<int> {  };
+    // public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> {  };
+    // public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> {  };
+    // public int BlackKing             { get; private set; } = 50;
+
+    // kiwipete
+    public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int> { 8,9,10,13,14,15,28,35 };
     public HashSet<int> WhiteRooks   { get; private set; } = new HashSet<int> { 0,7 };
-    public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int> { 1,6 };
-    public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int> { 2,5 };
-    public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int> { 3 };
+    public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int> { 18,36 };
+    public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int> { 11,12 };
+    public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int> { 21 };
     public int WhiteKing             { get; private set; } = 4;
 
-    public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int> { 48,49,50,51,52,53,54,55 };
+    public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int> { 23,25,44,46,48,50,51,53 };
     public HashSet<int> BlackRooks   { get; private set; } = new HashSet<int> { 56,63 };
-    public HashSet<int> BlackKnights { get; private set; } = new HashSet<int> { 57,62 };
-    public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> { 58,61 };
-    public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 59 };
+    public HashSet<int> BlackKnights { get; private set; } = new HashSet<int> { 41,45 };
+    public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> { 40,54 };
+    public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 52 };
     public int BlackKing             { get; private set; } = 60;
 
     // for where castled kings go
@@ -101,7 +130,8 @@ public partial class Engine
     private void InitOccupancy()
     {
         whiteOccupancy = new Dictionary<int, PieceType>();
-        foreach (int pos in WhitePawns)   whiteOccupancy[pos] = PieceType.VirginPawn;
+        // foreach (int pos in WhitePawns)   whiteOccupancy[pos] = PieceType.VirginPawn;
+        foreach (int pos in WhitePawns)   whiteOccupancy[pos] = pos>15?PieceType.Pawn:PieceType.VirginPawn;
         foreach (int pos in WhiteRooks)   whiteOccupancy[pos] = PieceType.VirginRook;
         foreach (int pos in WhiteKnights) whiteOccupancy[pos] = PieceType.Knight;
         foreach (int pos in WhiteBishops) whiteOccupancy[pos] = PieceType.Bishop;
@@ -109,7 +139,8 @@ public partial class Engine
         whiteOccupancy[WhiteKing] = PieceType.VirginKing;
         
         blackOccupancy = new Dictionary<int, PieceType>();
-        foreach (int pos in BlackPawns)   blackOccupancy[pos] = PieceType.VirginPawn;
+        // foreach (int pos in BlackPawns)   blackOccupancy[pos] = PieceType.VirginPawn;
+        foreach (int pos in BlackPawns)   blackOccupancy[pos] = pos<48?PieceType.Pawn:PieceType.VirginPawn;
         foreach (int pos in BlackRooks)   blackOccupancy[pos] = PieceType.VirginRook;
         foreach (int pos in BlackKnights) blackOccupancy[pos] = PieceType.Knight;
         foreach (int pos in BlackBishops) blackOccupancy[pos] = PieceType.Bishop;

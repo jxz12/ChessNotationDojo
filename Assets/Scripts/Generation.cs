@@ -86,19 +86,6 @@ public partial class Engine
             yield return targetPos;
         }
     }
-    private IEnumerable<int> PawnAttacks(int pawn, bool whiteToMove)
-    {
-        if (whiteToMove)
-        {
-            return         HopperAttack(pawn,  1, 1, whiteToMove)
-                   .Concat(HopperAttack(pawn, -1, 1, whiteToMove));
-        }
-        else
-        {
-            return         HopperAttack(pawn,  1, -1, whiteToMove)
-                   .Concat(HopperAttack(pawn, -1, -1, whiteToMove));
-        }
-    }
     private IEnumerable<int> KnightAttacks(int knight, bool whiteToMove)
     {
         return         HopperAttack(knight,  1,  2, whiteToMove)
@@ -138,9 +125,15 @@ public partial class Engine
                 var allies = whiteToMove? whiteOccupancy
                                         : blackOccupancy;
                 PieceType ally;
-                allies.TryGetValue(targetPos, out ally);
-                return ally==PieceType.VirginRook? targetPos 
-                                                 : -1;
+                if (allies.TryGetValue(targetPos, out ally)
+                    && ally==PieceType.VirginRook)
+                {
+                    return targetPos;
+                }
+                else
+                {
+                    return -1;
+                }
             }
             targetFile += fileSlide;
             targetPos = GetPos(targetFile, startRank);
@@ -173,12 +166,11 @@ public partial class Engine
             return false;
         
         // check whether all squares involved are free
-        int leftmostPos = left? Math.Min(virginRook, castledPos)
-                              : Math.Min(castledPos-1, king);
+        int leftmostPos =  left? Math.Min(virginRook, castledPos)
+                               : Math.Min(castledPos-1, king);
         int rightmostPos = left? Math.Max(castledPos+1, king)
                                : Math.Max(virginRook, castledPos);
 
-        var allies = whiteToMove? whiteOccupancy : blackOccupancy;
         for (int pos=leftmostPos; pos<=rightmostPos; pos++)
         {
             if (pos!=king && pos!=virginRook && Occupied(pos))
@@ -304,9 +296,33 @@ public partial class Engine
                 }
             }
             
-            // capture
-            foreach (int attack in PawnAttacks(pawn, whiteToMove))
+            // attacks
+            int file = GetFile(pawn);
+            if (file > 0)
             {
+                // left capture
+                int attack = pawn+forward - 1;
+                PieceType capture;
+                // pawns cannot move to an attacked square unless it's a capture
+                if (enemies.TryGetValue(attack, out capture))
+                {
+                    var pish = new Move() {
+                        WhiteMove = whiteToMove,
+                        Source = pawn,
+                        Target = attack,
+                        Type = MoveType.Normal,
+                        Moved = allies[pawn],
+                        Captured = capture,
+                        Previous = previous
+                    };
+                    foreach (Move m in PromotionsIfPossible(pish))
+                        yield return m;
+                }
+            }
+            if (file < nFiles-1)
+            {
+                // right capture
+                int attack = pawn+forward + 1;
                 PieceType capture;
                 // pawns cannot move to an attacked square unless it's a capture
                 if (enemies.TryGetValue(attack, out capture))
@@ -451,7 +467,7 @@ public partial class Engine
     // returns if current has moved into check
     private bool InCheck(Move current, IEnumerable<Move> nexts)
     {
-        bool inCheck = false;
+        // bool inCheck = false;
         if (current.Type != MoveType.Castle)
         {
             // simply check for king being captured
@@ -460,8 +476,7 @@ public partial class Engine
                 if (next.Captured == PieceType.King
                     || next.Captured == PieceType.VirginKing)
                 {
-                    inCheck = true;
-                    break;
+                    return true;
                 }
             }
         }
@@ -471,28 +486,41 @@ public partial class Engine
             int kingBefore = current.Source;
             int kingAfter = current.WhiteMove? WhiteKing : BlackKing;
 
-            if (kingBefore > kingAfter) // move left
+            // TODO: case where king moves e.g. right for a left castle
+            //       and the rook is shielding the source check square
+            if (kingBefore > kingAfter) // king moves left
             {
-                for (int pos=kingBefore; pos>kingAfter; pos--)
+                // include original square i.e. cannot move out of check
+                for (int pos=kingBefore; pos>=kingAfter; pos--)
                     kingSquares.Add(pos);
             }
-            else
+            else // right
             {
-                for (int pos=kingBefore; pos<kingAfter; pos++)
+                for (int pos=kingBefore; pos<=kingAfter; pos++)
                     kingSquares.Add(pos);
             }
             foreach (Move next in nexts)
             {
-                if (next.Captured == PieceType.King
-                    || next.Captured == PieceType.VirginKing
-                    || kingSquares.Contains(next.Target))
+                if (next.Moved != PieceType.Pawn
+                    && next.Moved != PieceType.VirginPawn
+                    && kingSquares.Contains(next.Target))
                 {
-                    inCheck = true;
-                    break;
+                    return true;
+                }
+            }
+            var enemyPawns = current.WhiteMove? BlackPawns : WhitePawns;
+            int forward = current.WhiteMove? -nFiles : nFiles;
+            foreach (int pawn in enemyPawns)
+            {
+                int file = GetFile(pawn);
+                if ((file > 0 && kingSquares.Contains(pawn+forward - 1))
+                    || (file < nFiles-1 && kingSquares.Contains(pawn+forward + 1)))
+                {
+                    return true;
                 }
             }
         }
-        return inCheck;
+        return false;
     }
     // returns if current move is checking enemy
     private bool IsCheck(Move current)

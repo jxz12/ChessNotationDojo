@@ -5,13 +5,14 @@ public partial class Engine
     int checks;
     int captures;
     int castles;
+    int promos;
     int eps;
     public int Perft(int ply)
     {
-        captures = eps = castles = checks = 0;
+        captures = eps = castles = promos = checks = 0;
         int nodes = Perft(lastPlayed, ply);
 
-        UnityEngine.Debug.Log(captures + " " + eps + " " + castles + " " + checks);
+        UnityEngine.Debug.Log(captures + " " + eps + " " + castles + " " + promos + " " + checks);
         return nodes;
     }
     private int Perft(Move current, int ply)
@@ -29,9 +30,12 @@ public partial class Engine
             if (ply == 0)
             {
                 if (current.Captured != PieceType.None) captures += 1;
-                if (IsCheck(current)) checks += 1;
-                if (current.Type == MoveType.Castle) castles += 1;
                 if (current.Type == MoveType.EnPassant) eps += 1;
+                if (current.Type == MoveType.Castle) castles += 1;
+                if (current.Promotion != PieceType.None
+                    // && current.Promotion != PieceType.Pawn
+                    && current.Moved == PieceType.Pawn) promos += 1;
+                if (IsCheck(current)) checks += 1;
 
                 UndoMove(current);
                 return 1;
