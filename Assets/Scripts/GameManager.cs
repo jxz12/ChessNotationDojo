@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -53,19 +54,29 @@ public class GameManager : MonoBehaviour
         allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
         ShowPossibleChars();
         Display();
-        
-        Perft();
     }
     [SerializeField] int ply;
-    async void Perft()
+    public async void Perft()
     {
         float start = Time.time;
         await Task.Run(()=> print(thomas.Perft(ply)));
         print(Time.time - start);
     }
+    public async void Evaluate()
+    {
+        float start = Time.time;
+        Tuple<string, float> best;
+        best = await Task.Run(()=> thomas.EvaluateBestMove(ply));
+        print(best.Item1 + " " + best.Item2);
+        print(Time.time - start);
+    }
+
+
+
     void Update()
     {
         ReadCharFromKeyboard();
+        if (Input.GetKeyDown(KeyCode.Return)) Evaluate();
     }
     void ShowPossibleChars()
     {
@@ -211,7 +222,6 @@ public class GameManager : MonoBehaviour
     }
     void ReadCharFromKeyboard()
     {
-
         if (Input.GetKeyDown(KeyCode.LeftArrow)) UndoMove();
         else if (Input.GetKeyDown(KeyCode.RightArrow)) RedoMove();
         else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))

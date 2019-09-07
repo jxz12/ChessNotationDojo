@@ -224,8 +224,7 @@ public partial class Engine
         int forward = whiteToMove? nFiles : -nFiles;
         var allyPawns = whiteToMove? WhitePawns : BlackPawns;
         var enemyPawns =  whiteToMove? BlackPawns : WhitePawns;
-        if (previous.Moved == PieceType.VirginPawn &&
-            previous.Target == previous.Source - 2*forward)
+        if (previous.Type == MoveType.EnPassant)
         {
             // capture from left
             if (previous.Target%nFiles != 0 &&

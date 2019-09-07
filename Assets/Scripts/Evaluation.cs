@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 public partial class Engine
@@ -26,14 +27,12 @@ public partial class Engine
         }
         else
         {
-            // UnityEngine.Debug.Log(ply + " " + current.Moved + " " + current.Target);
             if (ply == 0)
             {
                 if (current.Captured != PieceType.None) captures += 1;
                 if (current.Type == MoveType.EnPassant) eps += 1;
                 if (current.Type == MoveType.Castle) castles += 1;
                 if (current.Promotion != PieceType.None
-                    // && current.Promotion != PieceType.Pawn
                     && current.Moved == PieceType.Pawn) promos += 1;
                 if (IsCheck(current)) checks += 1;
 
@@ -51,23 +50,50 @@ public partial class Engine
                 return count;
             }
         }
+    }
+    private float Evaluate(Move current)
+    {
+        // float WhiteMaterial = WhitePawns.Count
+        //                       + 3 * WhiteBishops.Count
+        //                       + 3 * WhiteKnights.Count
+        //                       + 5 * WhiteRooks.Count
+        //                       + 9 * WhiteQueens.Count;
+        // float BlackMaterial = WhitePawns.Count
+        //                       + 3 * WhiteBishops.Count
+        //                       + 3 * WhiteKnights.Count
+        //                       + 5 * WhiteRooks.Count
+        //                       + 9 * WhiteQueens.Count;
+        return (whiteOccupancy.Count - blackOccupancy.Count) * (current.WhiteMove? 1 : -1);
+    }
+    float alpha=float.MinValue, beta=float.MaxValue;
+    private float NegaMax(Move current, int ply)
+    {
+        PlayMove(current);
+        var nexts = new List<Move>(FindPseudoLegalMoves(current));
+        if (InCheck(current, nexts)) // if illegal
+        {
+            UndoMove(current);
+            return float.MinValue;
+        }
+        else
+        {
+            if (ply == 0)
+            {
+                UndoMove(current);
+                return Evaluate(current);
+            }
+            else
+            {
+                float eval = float.MinValue;
+                foreach (Move next in nexts)
+                {
+                    // negation here is for minimax
+                    eval = Math.Max(eval, -NegaMax(next, ply-1));
+                }
+                UndoMove(current);
+                return eval;
+            }
+        }
 
     }
-    // private Move Evaluate(int ply)
-    // {
-    //     currentPly = 0;
-    // }
-    // private Move best;
-    // private int currentPly;
-    // private int _Evaluate(Move current, int ply)
-    // {
-    //     var candidates = new List<Move>(GeneratePseudoLegalMoves(current));
-    //     foreach (Move move in candidates)
-    //     {
-    //         if (move.Captured == PieceType.King)
-    //         {
-    //             return -1;
-    //         }
-    //     }
-    // }
 }
