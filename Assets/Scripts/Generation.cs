@@ -5,15 +5,15 @@ using System.Linq;
 public partial class Engine
 {
     // convenience
-    private int GetFile(int pos)
-    {
-        return pos % nFiles;
-    }
     private int GetRank(int pos)
     {
         return pos / nFiles;
     }
-    private int GetPos(int file, int rank)
+    private int GetFile(int pos)
+    {
+        return pos % nFiles;
+    }
+    private int GetPos(int rank, int file)
     {
         return rank * nFiles + file;
     }
@@ -29,7 +29,7 @@ public partial class Engine
         int startRank = GetRank(slider);
         int targetFile = startFile + fileSlide;
         int targetRank = startRank + rankSlide;
-        int targetPos = GetPos(targetFile, targetRank);
+        int targetPos = GetPos(targetRank, targetFile);
 
         while (targetFile >= 0 && targetFile < nFiles &&
                targetRank >= 0 && targetRank < nRanks &&
@@ -38,7 +38,7 @@ public partial class Engine
             yield return targetPos;
             targetFile += fileSlide;
             targetRank += rankSlide;
-            targetPos = GetPos(targetFile, targetRank);
+            targetPos = GetPos(targetRank, targetFile);
         }
 
         if (targetFile >= 0 && targetFile < nFiles &&
@@ -75,7 +75,7 @@ public partial class Engine
         int startRank = GetRank(hopper);
         int targetFile = startFile + fileHop;
         int targetRank = startRank + rankHop;
-        int targetPos = GetPos(targetFile, targetRank);
+        int targetPos = GetPos(targetRank, targetFile);
 
         if (targetFile >= 0 && targetFile < nFiles &&
             targetRank >= 0 && targetRank < nRanks &&
@@ -116,7 +116,7 @@ public partial class Engine
         int startRank = GetRank(source);
         int fileSlide = left? -1 : 1;
         int targetFile = startFile + fileSlide;
-        int targetPos = GetPos(targetFile, startRank);
+        int targetPos = GetPos(startRank, targetFile);
 
         while (targetFile >= 0 && targetFile < nFiles)
         {
@@ -136,7 +136,7 @@ public partial class Engine
                 }
             }
             targetFile += fileSlide;
-            targetPos = GetPos(targetFile, startRank);
+            targetPos = GetPos(startRank, targetFile);
         }
         return -1;
     }
@@ -154,7 +154,7 @@ public partial class Engine
             if (left) file = BlackLeftCastledFile;
             else      file = BlackRightCastledFile;
         }
-        return GetPos(file, rank);
+        return GetPos(rank, file);
     }
     private bool FindCastlingRook(int king, bool left, bool whiteToMove, out int virginRook)
     {
@@ -538,7 +538,7 @@ public partial class Engine
     }
     public bool Check()
     {
-        return IsCheck(lastPlayed);
+        return IsCheck(prevMove);
     }
 
     private void AddPiece(PieceType type, int pos, bool white)

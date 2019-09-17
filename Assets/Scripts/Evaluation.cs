@@ -11,9 +11,9 @@ public partial class Engine
     public int Perft(int ply)
     {
         captures = eps = castles = promos = checks = 0;
-        int nodes = Perft(lastPlayed, ply);
+        int nodes = Perft(prevMove, ply);
 
-        UnityEngine.Debug.Log(captures + " " + eps + " " + castles + " " + promos + " " + checks);
+        // UnityEngine.Debug.Log(captures + " " + eps + " " + castles + " " + promos + " " + checks);
         return nodes;
     }
     private int Perft(Move current, int ply)

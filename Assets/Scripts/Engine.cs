@@ -13,33 +13,39 @@ public partial class Engine
     public int nFiles { get; private set; } = 8;
 
     // board state
-    public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int> { 8,9,10,11,12,13,14,15 };
-    public HashSet<int> WhiteRooks   { get; private set; } = new HashSet<int> { 0,7 };
-    public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int> { 1,6 };
-    public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int> { 2,5 };
-    public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int> { 3 };
-    public int WhiteKing             { get; private set; } = 4;
+    public HashSet<int> WhitePawns   { get; private set; } = new HashSet<int>();
+    public HashSet<int> WhiteRooks   { get; private set; } = new HashSet<int>();
+    public HashSet<int> WhiteKnights { get; private set; } = new HashSet<int>();
+    public HashSet<int> WhiteBishops { get; private set; } = new HashSet<int>();
+    public HashSet<int> WhiteQueens  { get; private set; } = new HashSet<int>();
+    public int WhiteKing             { get; private set; } = -1;
 
-    public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int> { 48,49,50,51,52,53,54,55 };
-    public HashSet<int> BlackRooks   { get; private set; } = new HashSet<int> { 56,63 };
-    public HashSet<int> BlackKnights { get; private set; } = new HashSet<int> { 57,62 };
-    public HashSet<int> BlackBishops { get; private set; } = new HashSet<int> { 58,61 };
-    public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int> { 59 };
-    public int BlackKing             { get; private set; } = 60;
+    public HashSet<int> BlackPawns   { get; private set; } = new HashSet<int>();
+    public HashSet<int> BlackRooks   { get; private set; } = new HashSet<int>();
+    public HashSet<int> BlackKnights { get; private set; } = new HashSet<int>();
+    public HashSet<int> BlackBishops { get; private set; } = new HashSet<int>();
+    public HashSet<int> BlackQueens  { get; private set; } = new HashSet<int>();
+    public int BlackKing             { get; private set; } = -1;
 
+    // for starting rank of pawns
+    public int WhitePawnStartingRank { get; private set; }
+    public int BlackPawnStartingRank { get; private set; }
     // for where castled kings go
-    public int WhiteLeftCastledFile  { get; private set; } = 2;
-    public int WhiteRightCastledFile { get; private set; } = 6;
-    public int BlackLeftCastledFile  { get; private set; } = 2;
-    public int BlackRightCastledFile { get; private set; } = 6;
+    public int WhiteLeftCastledFile  { get; private set; } 
+    public int WhiteRightCastledFile { get; private set; }
+    public int BlackLeftCastledFile  { get; private set; }
+    public int BlackRightCastledFile { get; private set; }
     
     public enum MoveType { None=0, Normal, Castle, EnPassant };
     public enum PieceType { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
                                            VirginPawn, VirginRook, VirginKing };
                                            // for castling, en passant etc.
+    // for checking captures
+    private Dictionary<int, PieceType> whiteOccupancy, blackOccupancy;
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
+    // therefore acts like a LinkedList
     private class Move
     {
         public Move Previous = null;
@@ -67,27 +73,68 @@ public partial class Engine
         }
     }
 
-    // for checking captures
-    private Dictionary<int, PieceType> whiteOccupancy, blackOccupancy;
-
     // current to evaluate
-    private Move lastPlayed;
+    private Move prevMove;
     Dictionary<string, Move> legalMoves;
 
-    public Engine()
+    public Engine(int ranks=8, int files=8,
+                  string sFEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1",
+                  int whitePawnStartingRank=1, int blackPawnStartingRank=6,
+                  int whiteLeftCastledFile=2, int blackLeftCastledFile=2,
+                  int whiteRightCastledFile=6, int blackRightCastledFile=6)
     {
-        InitOccupancy();
+        if (ranks > 16 || files > 16) // ascii bleeds into letters otherwise!
+            throw new Exception("only up to 16x16 boards are supported. If you want more then you're crazy.");
 
-        lastPlayed = new Move();
-        legalMoves = FindLegalMoves(lastPlayed);
-    }
-    // for other game types
-    public Engine(int ranks, int files, string FEN,
-                  int whiteLeftCastledFile=-1, int whiteRightCastleFile=-1,
-                  int blackLeftCastledFile=-1, int blackRightCastleFile=-1)
-    {
         nRanks = ranks;
         nFiles = files;
+
+        int rank = nRanks-1;
+        int file = -1;
+        int i = 0;
+        while (sFEN[i] != ' ')
+        {
+            file += 1;
+            if (sFEN[i] == '/')
+            {
+                if (file != nFiles)
+                    throw new Exception("wrong number of squares in FEN rank " + rank);
+
+                rank -= 1;
+                file = -1;
+            }
+            else if (sFEN[i] == 'P') WhitePawns.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'R') WhiteRooks.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'N') WhiteKnights.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'B') WhiteBishops.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'Q') WhiteQueens.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'K') WhiteKing = GetPos(rank, file); // TODO: check duplicate
+            else if (sFEN[i] == 'p') BlackPawns.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'r') BlackRooks.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'n') BlackKnights.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'b') BlackBishops.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'q') BlackQueens.Add(GetPos(rank, file));
+            else if (sFEN[i] == 'k') BlackKing = GetPos(rank, file); // TODO: check duplicate
+            else // blank, so assume number
+            {
+                file += sFEN[i] - '1'; // -1 because file will be incremented regardless
+            }
+            i += 1;
+        }
+        // TODO: rest of notation, virgins
+
+        WhitePawnStartingRank = whitePawnStartingRank;
+        WhiteLeftCastledFile  = whiteLeftCastledFile;
+        WhiteRightCastledFile = whiteRightCastledFile;
+        BlackPawnStartingRank = blackPawnStartingRank;
+        BlackLeftCastledFile  = blackLeftCastledFile;
+        BlackRightCastledFile = blackRightCastledFile;
+
+        InitOccupancy();
+        prevMove = new Move(); // TODO: change for enpassant
+
+        CheckLegality();
+        legalMoves = FindLegalMoves(prevMove);
     }
 
     private void InitOccupancy()
@@ -109,6 +156,10 @@ public partial class Engine
         foreach (int pos in BlackBishops) blackOccupancy[pos] = PieceType.Bishop;
         foreach (int pos in BlackQueens)  blackOccupancy[pos] = PieceType.Queen;
         blackOccupancy[BlackKing] = PieceType.VirginKing;
+    }
+    private void CheckLegality()
+    {
+        UnityEngine.Debug.Log("TODO: check multiple occupations, if in check, if pawns are behind the starting square, ");
     }
 
     ///////////////////////////////////
@@ -158,9 +209,9 @@ public partial class Engine
         }
         return sb.ToString();
     }
-    private Dictionary<string, Move> FindLegalMoves(Move current)
+    private Dictionary<string, Move> FindLegalMoves(Move prev)
     {
-        var nexts = new List<Move>(FindPseudoLegalMoves(current));
+        var nexts = new List<Move>(FindPseudoLegalMoves(prev));
         var ambiguous = new Dictionary<string, List<Move>>();
 
         foreach (Move next in nexts)
@@ -236,8 +287,8 @@ public partial class Engine
         if (legalMoves.TryGetValue(algebraic, out toPlay))
         {
             PlayMove(toPlay);
-            lastPlayed = toPlay;
-            legalMoves = FindLegalMoves(lastPlayed);
+            prevMove = toPlay;
+            legalMoves = FindLegalMoves(prevMove);
         }
         else
         {
@@ -262,11 +313,11 @@ public partial class Engine
     }
     public void UndoLastMove()
     {
-        if (lastPlayed != null)
+        if (prevMove != null)
         {
-            UndoMove(lastPlayed);
-            lastPlayed = lastPlayed.Previous;
-            legalMoves = FindLegalMoves(lastPlayed);
+            UndoMove(prevMove);
+            prevMove = prevMove.Previous;
+            legalMoves = FindLegalMoves(prevMove);
         }
         else
         {
