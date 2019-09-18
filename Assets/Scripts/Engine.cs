@@ -19,7 +19,7 @@ public partial class Engine
         public int GetFile(int pos) { return pos % NFiles; }
         public int GetPos(int rank, int file) { return rank * NFiles + file; }
         public bool InBounds(int pos) { return pos>=0 && pos<(NRanks*NFiles); }
-        // public bool InBounds(int rank, int file) { return file>=0 && file<NFiles && rank>=0 && rank<NRanks; }
+        public bool InBounds(int rank, int file) { return file>=0 && file<NFiles && rank>=0 && rank<NRanks; }
 
         public Dictionary<int, Piece> White { get; private set; } = new Dictionary<int, Piece>();
         public Dictionary<int, Piece> Black { get; private set; } = new Dictionary<int, Piece>();

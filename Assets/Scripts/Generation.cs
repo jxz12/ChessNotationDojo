@@ -14,7 +14,7 @@ public partial class Engine
         int targetRank = startRank + rankSlide;
         int targetPos = board.GetPos(targetRank, targetFile);
 
-        while (board.InBounds(targetPos) &&
+        while (board.InBounds(targetRank, targetFile) &&
                !board.Occupied(targetPos))
         {
             yield return targetPos;
@@ -24,7 +24,7 @@ public partial class Engine
         }
 
         // capture
-        if (board.InBounds(targetPos) &&
+        if (board.InBounds(targetRank, targetFile) &&
             (whiteToMove? board.Black.ContainsKey(targetPos)
                         : board.White.ContainsKey(targetPos)))
         {
@@ -59,7 +59,7 @@ public partial class Engine
         int targetRank = startRank + rankHop;
         int targetPos = board.GetPos(targetRank, targetFile);
 
-        if (board.InBounds(targetPos) &&
+        if (board.InBounds(targetRank, targetFile) &&
             (whiteToMove? !board.White.ContainsKey(targetPos)
                         : !board.Black.ContainsKey(targetPos)))
             // only blocked by own pieces
@@ -99,7 +99,7 @@ public partial class Engine
         int targetFile = startFile + fileSlide;
         int targetPos = board.GetPos(startRank, targetFile);
 
-        while (board.InBounds(targetPos))
+        while (board.InBounds(startRank, targetFile))
         {
             if (board.Occupied(targetPos))
             {
