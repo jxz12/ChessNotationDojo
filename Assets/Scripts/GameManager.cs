@@ -10,6 +10,7 @@ public class GameManager : MonoBehaviour
     // TODO: options to make invisible/pulse
     //       flip board
     //       color schemes
+    //       puzzles/player vs computer/player vs player
 
     [SerializeField] GridLayoutGroup board;
     [SerializeField] List<Text> squares; // TODO: change to a class Square and make it any size
@@ -54,6 +55,7 @@ public class GameManager : MonoBehaviour
         allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
         ShowPossibleChars();
         Display();
+        Perft();
     }
     [SerializeField] int ply;
     public async void Perft()
@@ -269,29 +271,20 @@ public class GameManager : MonoBehaviour
         squares[position].color = colour;
         squares[position].text = letter;
     }
-    void DisplayPieces(IEnumerable<int> positions, string letter, Color colour)
-    {
-        foreach (int i in positions)
-        {
-            squares[i].color = colour;
-            squares[i].text = letter;
-        }
-    }
     void Display()
     {
         ClearBoard();
-        DisplayPieces(thomas.WhitePawns,   "♟", Color.white);
-        DisplayPieces(thomas.WhiteRooks,   "♜", Color.white);
-        DisplayPieces(thomas.WhiteKnights, "♞", Color.white);
-        DisplayPieces(thomas.WhiteBishops, "♝", Color.white);
-        DisplayPieces(thomas.WhiteQueens,  "♛", Color.white);
-        DisplayPiece(thomas.WhiteKing,     "♚", Color.white);
-
-        DisplayPieces(thomas.BlackPawns,   "♟", Color.black);
-        DisplayPieces(thomas.BlackRooks,   "♜", Color.black);
-        DisplayPieces(thomas.BlackKnights, "♞", Color.black);
-        DisplayPieces(thomas.BlackBishops, "♝", Color.black);
-        DisplayPieces(thomas.BlackQueens,  "♛", Color.black);
-        DisplayPiece(thomas.BlackKing,     "♚", Color.black);
+        for (int i=0; i<squares.Count; i++)
+        {
+            string piece = thomas.PieceOnSquare(i, true);
+            if (piece != null)
+                DisplayPiece(i, piece, Color.white);
+            else
+            {
+                piece = thomas.PieceOnSquare(i, false);
+                if (piece != null)
+                    DisplayPiece(i, piece, Color.black);
+            }
+        }
     }
 }

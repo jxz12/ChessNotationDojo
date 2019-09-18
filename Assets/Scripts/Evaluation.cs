@@ -29,11 +29,11 @@ public partial class Engine
         {
             if (ply == 0)
             {
-                if (current.Captured != PieceType.None) captures += 1;
-                if (current.Type == MoveType.EnPassant) eps += 1;
-                if (current.Type == MoveType.Castle) castles += 1;
-                if (current.Promotion != PieceType.None
-                    && current.Moved == PieceType.Pawn) promos += 1;
+                if (current.Captured != Piece.None) captures += 1;
+                if (current.Type == Move.Special.EnPassant) eps += 1;
+                if (current.Type == Move.Special.Castle) castles += 1;
+                if (current.Promotion != Piece.None
+                    && current.Moved == Piece.Pawn) promos += 1;
                 if (IsCheck(current)) checks += 1;
 
                 UndoMove(current);
@@ -51,19 +51,20 @@ public partial class Engine
             }
         }
     }
+    private static Dictionary<Piece, float> pieceValues = new Dictionary<Piece, float>() {
+        { Piece.Pawn, 1 },
+        { Piece.Rook, 5 },
+        { Piece.Knight, 3 },
+        { Piece.Bishop, 3 },
+        { Piece.Queen, 9 },
+        { Piece.King, 100 }
+    };
     private float Evaluate(Move current)
     {
-        // float WhiteMaterial = WhitePawns.Count
-        //                       + 3 * WhiteBishops.Count
-        //                       + 3 * WhiteKnights.Count
-        //                       + 5 * WhiteRooks.Count
-        //                       + 9 * WhiteQueens.Count;
-        // float BlackMaterial = WhitePawns.Count
-        //                       + 3 * WhiteBishops.Count
-        //                       + 3 * WhiteKnights.Count
-        //                       + 5 * WhiteRooks.Count
-        //                       + 9 * WhiteQueens.Count;
-        return (whiteOccupancy.Count - blackOccupancy.Count) * (current.WhiteMove? 1 : -1);
+        float total = 0;
+        foreach (Piece p in board.White.Values) total += pieceValues[p];
+        foreach (Piece p in board.White.Values) total += pieceValues[p];
+        return total;
     }
     float alpha=float.MinValue, beta=float.MaxValue;
     private float NegaMax(Move current, int ply)
