@@ -13,7 +13,7 @@ public partial class Engine
         captures = eps = castles = promos = checks = 0;
         int nodes = Perft(prevMove, ply);
 
-        // UnityEngine.Debug.Log(captures + " " + eps + " " + castles + " " + promos + " " + checks);
+        UnityEngine.Debug.Log(captures + " " + eps + " " + castles + " " + promos + " " + checks);
         return nodes;
     }
     private int Perft(Move current, int ply)
@@ -62,8 +62,8 @@ public partial class Engine
     private float Evaluate(Move current)
     {
         float total = 0;
-        foreach (Piece p in board.White.Values) total += pieceValues[p];
-        foreach (Piece p in board.White.Values) total += pieceValues[p];
+        foreach (Piece p in whitePieces.Values) total += pieceValues[p];
+        foreach (Piece p in blackPieces.Values) total -= pieceValues[p];
         return total;
     }
     float alpha=float.MinValue, beta=float.MaxValue;

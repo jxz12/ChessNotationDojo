@@ -11,26 +11,14 @@ public partial class Engine
     private enum Piece { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
                         VirginRook, VirginKing }; // for castling, en passant etc.
 
-    private class Board
-    {
-        public int NRanks { get; set; } = 8;
-        public int NFiles { get; set; } = 8;
-        public int GetRank(int pos) { return pos / NFiles; }
-        public int GetFile(int pos) { return pos % NFiles; }
-        public int GetPos(int rank, int file) { return rank * NFiles + file; }
-        public bool InBounds(int pos) { return pos>=0 && pos<(NRanks*NFiles); }
-        public bool InBounds(int rank, int file) { return file>=0 && file<NFiles && rank>=0 && rank<NRanks; }
+    private Dictionary<int, Piece> whitePieces = new Dictionary<int, Piece>();
+    private Dictionary<int, Piece> blackPieces = new Dictionary<int, Piece>();
 
-        public Dictionary<int, Piece> White { get; private set; } = new Dictionary<int, Piece>();
-        public Dictionary<int, Piece> Black { get; private set; } = new Dictionary<int, Piece>();
-        public bool Occupied(int pos) { return White.ContainsKey(pos) || Black.ContainsKey(pos); }
-
-        // for where castled kings go
-        public int WhiteLeftCastledFile  { get; set; } 
-        public int WhiteRightCastledFile { get; set; }
-        public int BlackLeftCastledFile  { get; set; }
-        public int BlackRightCastledFile { get; set; }
-    }
+    public int NRanks { get; private set; } = 8;
+    public int NFiles { get; private set; } = 8;
+    // for where castled kings go, may be different in variants
+    public int LeftCastledFile  { get; private set; } 
+    public int RightCastledFile { get; private set; }
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
@@ -50,34 +38,34 @@ public partial class Engine
 
     // current to evaluate
     private Move prevMove;
-    private Board board;
+    private int halfMoveClock;
     private Dictionary<string, Move> legalMoves;
+
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-                  int whiteLeftCastledFile=2, int blackLeftCastledFile=2,
-                  int whiteRightCastledFile=6, int blackRightCastledFile=6)
+                  int leftCastledFile=2, int rightCastledFile=6)// TODO:, bool puushable=true)
     {
-        board = new Board();
-        board.NRanks = FEN.Count(c=>c=='/') + 1;
-        board.NFiles = 0;
+        // board = new Board();
+        NRanks = FEN.Count(c=>c=='/') + 1;
+        NFiles = 0;
         foreach (char c in FEN) // count files in first rank
         {
             if (c == '/') break;
-            else if (c > '0' && c <= '9') board.NFiles += c-'0';
-            else board.NFiles += 1;
+            else if (c > '0' && c <= '9') NFiles += c-'0';
+            else NFiles += 1;
         }
-        if (board.NRanks > 26 || board.NFiles > 9)
+        if (NRanks > 26 || NFiles > 9)
             throw new Exception("cannot have more than 26x9 board (blame ASCII lol)");
 
-        int rank = board.NRanks-1;
+        int rank = NRanks-1;
         int file = -1;
         int i = 0;
         while (FEN[i] != ' ')
         {
             file += 1;
-            int pos = board.GetPos(rank, file);
+            int pos = GetPos(rank, file);
             if (FEN[i] == '/')
             {
-                if (file != board.NFiles)
+                if (file != NFiles)
                     throw new Exception("wrong number of squares in FEN rank " + rank);
 
                 rank -= 1;
@@ -87,19 +75,19 @@ public partial class Engine
             {
                 file += FEN[i] - '1'; // -1 because file will be incremented regardless
             }
-            else if (FEN[i] == 'P') board.White[pos] = Piece.Pawn;
-            else if (FEN[i] == 'R') board.White[pos] = Piece.Rook;
-            else if (FEN[i] == 'N') board.White[pos] = Piece.Knight;
-            else if (FEN[i] == 'B') board.White[pos] = Piece.Bishop;
-            else if (FEN[i] == 'Q') board.White[pos] = Piece.Queen;
-            else if (FEN[i] == 'K') board.White[pos] = Piece.King; // TODO: virgins
-            else if (FEN[i] == 'p') board.Black[pos] = Piece.Pawn;
-            else if (FEN[i] == 'r') board.Black[pos] = Piece.Rook;
-            else if (FEN[i] == 'n') board.Black[pos] = Piece.Knight;
-            else if (FEN[i] == 'b') board.Black[pos] = Piece.Bishop;
-            else if (FEN[i] == 'q') board.Black[pos] = Piece.Queen;
-            else if (FEN[i] == 'k') board.Black[pos] = Piece.King;
-            else throw new Exception("unexpected character " + FEN[i]);
+            else if (FEN[i] == 'P') whitePieces[pos] = Piece.Pawn;
+            else if (FEN[i] == 'R') whitePieces[pos] = Piece.VirginRook;
+            else if (FEN[i] == 'N') whitePieces[pos] = Piece.Knight;
+            else if (FEN[i] == 'B') whitePieces[pos] = Piece.Bishop;
+            else if (FEN[i] == 'Q') whitePieces[pos] = Piece.Queen;
+            else if (FEN[i] == 'K') whitePieces[pos] = Piece.VirginKing; // TODO: check for more than one king
+            else if (FEN[i] == 'p') blackPieces[pos] = Piece.Pawn;
+            else if (FEN[i] == 'r') blackPieces[pos] = Piece.VirginRook;
+            else if (FEN[i] == 'n') blackPieces[pos] = Piece.Knight;
+            else if (FEN[i] == 'b') blackPieces[pos] = Piece.Bishop;
+            else if (FEN[i] == 'q') blackPieces[pos] = Piece.Queen;
+            else if (FEN[i] == 'k') blackPieces[pos] = Piece.VirginKing;
+            else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
             i += 1;
         }
@@ -109,33 +97,70 @@ public partial class Engine
         i += 1;
         if (FEN[i] == 'w') prevMove.WhiteMove = false;
         else if (FEN[i] == 'b') prevMove.WhiteMove = true;
-        else throw new Exception("unexpected character " + FEN[i]);
+        else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-        // // castling
-        // i += 1;
-        // while (FEN[i] != ' ')
-        // {
+        // castling
+        i += 2;
+        while (FEN[i] != ' ')
+        {
+            if (FEN[i] == 'K')
+            {
+                // unvirgin all rooks to the left of white king
+            }
+            else if (FEN[i] == 'Q')
+            {
+                // unvirgin all rooks to the left of white king
+            }
+            else if (FEN[i] == 'k')
+            {
+                // unvirgin all rooks to the right of black king
+            }
+            else if (FEN[i] == 'q')
+            {
+                // unvirgin all rooks to the left of black king
+            }
+            else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-        // }
+            i += 1;
+        }
 
-        // // en passant
+        // en passant
         // i += 1;
         // if (FEN[i] != '-')
         // {
         //     file = FEN[i] - 'a';
         //     if (file < 0 || file >= NFiles)
-        //         throw new Exception("unexpected character " + FEN[i]);
+        //         throw new Exception("unexpected character " + FEN[i] + " at " + i);
+        //     else
+        //     {
+        //         prevMove.Moved = Piece.Pawn;
+        //         prevMove.Source = prevMove.WhiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
+        //         prevMove.Target = prevMove.WhiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
+        //     }
         // }
 
-        // TODO: for 960 too pls
-        UnityEngine.Debug.Log("TODO: check multiple occupations, if in check, if pawns are behind the starting square, if rooks are on either side for castling");
+        // counter TODO: maybe
 
-        board.WhiteLeftCastledFile  = whiteLeftCastledFile;
-        board.WhiteRightCastledFile = whiteRightCastledFile;
-        board.BlackLeftCastledFile  = blackLeftCastledFile;
-        board.BlackRightCastledFile = blackRightCastledFile;
+        LeftCastledFile = leftCastledFile;
+        RightCastledFile = rightCastledFile;
 
         legalMoves = FindLegalMoves(prevMove);
+    }
+
+    public int GetRank(int pos) {
+        return pos / NFiles;
+    }
+    public int GetFile(int pos) {
+        return pos % NFiles;
+    }
+    public int GetPos(int rank, int file) {
+        return rank * NFiles + file;
+    }
+    public bool InBounds(int rank, int file) {
+        return file>=0 && file<NFiles && rank>=0 && rank<NRanks;
+    }
+    public bool Occupied(int pos) {
+        return whitePieces.ContainsKey(pos) || blackPieces.ContainsKey(pos);
     }
 
 
@@ -145,19 +170,21 @@ public partial class Engine
     private static Dictionary<Piece, string> pieceStrings = new Dictionary<Piece, string>() {
         { Piece.Pawn, "♟" },
         { Piece.Rook, "♜" },
+        { Piece.VirginRook, "♜" },
         { Piece.Knight, "♞" },
         { Piece.Bishop, "♝" },
         { Piece.Queen, "♛" },
-        { Piece.King, "♚" }
+        { Piece.King, "♚" },
+        { Piece.VirginKing, "♚" },
     };
     public string PieceOnSquare(int pos, bool white)
     {
         Piece p;
-        if (white && board.White.TryGetValue(pos, out p))
+        if (white && whitePieces.TryGetValue(pos, out p))
         {
             return pieceStrings[p];
         }
-        else if (!white && board.Black.TryGetValue(pos, out p))
+        else if (!white && blackPieces.TryGetValue(pos, out p))
         {
             return pieceStrings[p];
         }
@@ -174,12 +201,12 @@ public partial class Engine
         }
         else if (move.Moved == Piece.Pawn)
         {
-            sb.Append((char)('a'+(move.Source%board.NFiles)));
+            sb.Append((char)('a'+(move.Source%NFiles)));
             if (move.Captured != Piece.None)
             {
-                sb.Append('x').Append((char)('a'+(move.Target%board.NFiles)));
+                sb.Append('x').Append((char)('a'+(move.Target%NFiles)));
             }
-            sb.Append(move.Target/board.NFiles + 1);
+            sb.Append(move.Target/NFiles + 1);
             if (move.Promotion != Piece.None
                 && move.Promotion != Piece.Pawn)
             {
@@ -202,8 +229,8 @@ public partial class Engine
 
             if (move.Captured != Piece.None) sb.Append('x');
 
-            sb.Append((char)('a'+(move.Target%board.NFiles)));
-            sb.Append(move.Target/board.NFiles + 1);
+            sb.Append((char)('a'+(move.Target%NFiles)));
+            sb.Append(move.Target/NFiles + 1);
         }
         return sb.ToString();
     }
@@ -245,14 +272,14 @@ public partial class Engine
                 foreach (Move move in ambiguous[algebraic])
                 {
                     // check which coordinates (file/rank) clash
-                    int file = board.GetFile(move.Source);
-                    int rank = board.GetRank(move.Source);
+                    int file = GetFile(move.Source);
+                    int rank = GetRank(move.Source);
                     bool repeatFile = false;
                     bool repeatRank = false;
                     foreach (Move clash in ambiguous[algebraic].Where(x=> x!=move))
                     {
-                        repeatFile |= file == board.GetFile(clash.Source);
-                        repeatRank |= rank == board.GetRank(clash.Source);
+                        repeatFile |= file == GetFile(clash.Source);
+                        repeatRank |= rank == GetRank(clash.Source);
                     }
                     // if no shared file, use file
                     string disambiguated;
