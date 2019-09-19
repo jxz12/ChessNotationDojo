@@ -166,7 +166,7 @@ public partial class Engine
             {
                 // push
                 // pawn should never be at last rank, so no need for bounds check
-                if (rank+1 < NRanks)
+                if (!Occupied(pos+forward))
                 {
                     var push = new Move() {
                         WhiteMove = whiteToMove,
@@ -193,8 +193,8 @@ public partial class Engine
                             Previous = previous
                         };
                         yield return puush;
-                        // foreach (Move m in PromotionsIfPossible(puush))
-                        //     yield return m;
+                        foreach (Move m in PromotionsIfPossible(puush))
+                            yield return m;
                     }
                 }
                 
@@ -249,7 +249,7 @@ public partial class Engine
                     // enpassant cannot be a promotion
                     yield return new Move() {
                         WhiteMove = whiteToMove,
-                        Source = previous.Target - 1,
+                        Source = pos,
                         Target = previous.Target + forward,
                         Type = Move.Special.EnPassant,
                         Moved = Piece.Pawn,
@@ -501,7 +501,7 @@ public partial class Engine
 
     private void AddPiece(Piece type, int pos, bool white)
     {
-        UnityEngine.Debug.Log(pos);
+        // UnityEngine.Debug.Log(type + "+" + pos);
         if (Occupied(pos))
             throw new Exception("sorry " + type + ", " + pos + " occupado");
 
@@ -516,7 +516,7 @@ public partial class Engine
     }
     private void RemovePiece(Piece type, int pos, bool white)
     {
-        UnityEngine.Debug.Log(pos);
+        // UnityEngine.Debug.Log(type + "-" + pos);
         if (!Occupied(pos))
             throw new Exception(pos + " no piece " + type + " here");
 

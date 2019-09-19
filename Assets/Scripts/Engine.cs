@@ -27,18 +27,18 @@ public partial class Engine
         public enum Special { None=0, Normal, Castle, EnPassant };
 
         public Move Previous = null;
-        public bool WhiteMove { get; set; } = false;
-        public int Source { get; set; } = 0;
-        public int Target { get; set; } = 0;
-        public Special Type { get; set; } = Special.None;
-        public Piece Moved { get; set; } = Piece.None;
-        public Piece Captured { get; set; } = Piece.None;
-        public Piece Promotion { get; set; } = Piece.None;
+        public bool WhiteMove = false;
+        public int Source = 0;
+        public int Target = 0;
+        public Special Type = Special.None;
+        public Piece Moved = Piece.None;
+        public Piece Captured = Piece.None;
+        public Piece Promotion = Piece.None;
     }
 
     // current to evaluate
     private Move prevMove;
-    private int halfMoveClock;
+    // TODO: private int halfMoveClock;
     private Dictionary<string, Move> legalMoves;
 
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
@@ -125,19 +125,19 @@ public partial class Engine
         }
 
         // en passant
-        // i += 1;
-        // if (FEN[i] != '-')
-        // {
-        //     file = FEN[i] - 'a';
-        //     if (file < 0 || file >= NFiles)
-        //         throw new Exception("unexpected character " + FEN[i] + " at " + i);
-        //     else
-        //     {
-        //         prevMove.Moved = Piece.Pawn;
-        //         prevMove.Source = prevMove.WhiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
-        //         prevMove.Target = prevMove.WhiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
-        //     }
-        // }
+        i += 1;
+        if (FEN[i] != '-')
+        {
+            file = FEN[i] - 'a';
+            if (file < 0 || file >= NFiles)
+                throw new Exception("unexpected character " + FEN[i] + " at " + i);
+            else
+            {
+                prevMove.Moved = Piece.Pawn;
+                prevMove.Source = prevMove.WhiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
+                prevMove.Target = prevMove.WhiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
+            }
+        }
 
         // counter TODO: maybe
 
