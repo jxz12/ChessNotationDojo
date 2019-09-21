@@ -9,7 +9,7 @@ using System.Text;
 public partial class Engine
 {
     private enum Piece { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
-                        VirginRook, VirginKing }; // for castling, en passant etc.
+                         VirginPawn, VirginRook, VirginKing }; // for castling, en passant etc.
 
     private Dictionary<int, Piece> whitePieces = new Dictionary<int, Piece>();
     private Dictionary<int, Piece> blackPieces = new Dictionary<int, Piece>();
@@ -26,14 +26,14 @@ public partial class Engine
     {
         public enum Special { None=0, Normal, Castle, EnPassant };
 
-        public Move Previous = null;
-        public bool WhiteMove = false;
-        public int Source = 0;
-        public int Target = 0;
-        public Special Type = Special.None;
-        public Piece Moved = Piece.None;
-        public Piece Captured = Piece.None;
-        public Piece Promotion = Piece.None;
+        public Move previous = null;
+        public bool whiteMove = false;
+        public int source = 0;
+        public int target = 0;
+        public Special type = Special.None;
+        public Piece moved = Piece.None;
+        public Piece captured = Piece.None;
+        public Piece promotion = Piece.None;
     }
 
     // current to evaluate
@@ -42,7 +42,8 @@ public partial class Engine
     private Dictionary<string, Move> legalMoves;
 
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-                  int leftCastledFile=2, int rightCastledFile=6)// TODO:, bool puushable=true)
+                  int leftCastledFile=2, int rightCastledFile=6,
+                  bool whitePuush=true, bool blackPuush=true)
     {
         // board = new Board();
         NRanks = FEN.Count(c=>c=='/') + 1;
@@ -53,7 +54,7 @@ public partial class Engine
             else if (c > '0' && c <= '9') NFiles += c-'0';
             else NFiles += 1;
         }
-        if (NRanks > 26 || NFiles > 9)
+        if (NFiles > 26 || NRanks > 9)
             throw new Exception("cannot have more than 26x9 board (blame ASCII lol)");
 
         int rank = NRanks-1;
@@ -75,14 +76,16 @@ public partial class Engine
             {
                 file += FEN[i] - '1'; // -1 because file will be incremented regardless
             }
-            else if (FEN[i] == 'P') whitePieces[pos] = Piece.Pawn;
-            else if (FEN[i] == 'R') whitePieces[pos] = Piece.VirginRook;
+            else if (FEN[i] == 'P') whitePieces[pos] = (whitePuush && GetRank(pos)==1)
+                                                       ? Piece.VirginPawn : Piece.Pawn;
+            else if (FEN[i] == 'R') whitePieces[pos] = Piece.Rook;
             else if (FEN[i] == 'N') whitePieces[pos] = Piece.Knight;
             else if (FEN[i] == 'B') whitePieces[pos] = Piece.Bishop;
             else if (FEN[i] == 'Q') whitePieces[pos] = Piece.Queen;
-            else if (FEN[i] == 'K') whitePieces[pos] = Piece.VirginKing; // TODO: check for more than one king
-            else if (FEN[i] == 'p') blackPieces[pos] = Piece.Pawn;
-            else if (FEN[i] == 'r') blackPieces[pos] = Piece.VirginRook;
+            else if (FEN[i] == 'K') whitePieces[pos] = Piece.VirginKing;
+            else if (FEN[i] == 'p') blackPieces[pos] = (blackPuush && GetRank(pos)==NRanks-2)
+                                                       ? Piece.VirginPawn : Piece.Pawn;
+            else if (FEN[i] == 'r') blackPieces[pos] = Piece.Rook;
             else if (FEN[i] == 'n') blackPieces[pos] = Piece.Knight;
             else if (FEN[i] == 'b') blackPieces[pos] = Piece.Bishop;
             else if (FEN[i] == 'q') blackPieces[pos] = Piece.Queen;
@@ -95,33 +98,46 @@ public partial class Engine
 
         // 
         i += 1;
-        if (FEN[i] == 'w') prevMove.WhiteMove = false;
-        else if (FEN[i] == 'b') prevMove.WhiteMove = true;
+        if (FEN[i] == 'w') prevMove.whiteMove = false;
+        else if (FEN[i] == 'b') prevMove.whiteMove = true;
         else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
         // castling
         i += 2;
+        bool K,Q,k,q;
+        K=Q=k=q=false;
         while (FEN[i] != ' ')
         {
-            if (FEN[i] == 'K')
-            {
-                // unvirgin all rooks to the left of white king
-            }
-            else if (FEN[i] == 'Q')
-            {
-                // unvirgin all rooks to the left of white king
-            }
-            else if (FEN[i] == 'k')
-            {
-                // unvirgin all rooks to the right of black king
-            }
-            else if (FEN[i] == 'q')
-            {
-                // unvirgin all rooks to the left of black king
-            }
+            if (FEN[i] == 'K') K = true;
+            else if (FEN[i] == 'Q') Q = true;
+            else if (FEN[i] == 'k') k = true;
+            else if (FEN[i] == 'q') q = true;
+            else if (FEN[i] == '-') {}
             else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
             i += 1;
+        }
+        foreach (int pos in whitePieces.Keys.ToList())
+        {
+            if (whitePieces[pos] == Piece.Rook)
+            {
+                bool leftRook = IsRookLeftCastle(pos, true);
+                if (leftRook && K)
+                    whitePieces[pos] = Piece.VirginRook;
+                if (!leftRook && Q)
+                    whitePieces[pos] = Piece.VirginRook;
+            }
+        }
+        foreach (int pos in blackPieces.Keys.ToList())
+        {
+            if (blackPieces[pos] == Piece.Rook)
+            {
+                bool leftRook = IsRookLeftCastle(pos, false);
+                if (leftRook && k)
+                    blackPieces[pos] = Piece.VirginRook;
+                if (!leftRook && q)
+                    blackPieces[pos] = Piece.VirginRook;
+            }
         }
 
         // en passant
@@ -133,13 +149,13 @@ public partial class Engine
                 throw new Exception("unexpected character " + FEN[i] + " at " + i);
             else
             {
-                prevMove.Moved = Piece.Pawn;
-                prevMove.Source = prevMove.WhiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
-                prevMove.Target = prevMove.WhiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
+                prevMove.moved = Piece.VirginPawn;
+                prevMove.source = prevMove.whiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
+                prevMove.target = prevMove.whiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
             }
         }
 
-        // counter TODO: maybe
+        // TODO: draw counter
 
         LeftCastledFile = leftCastledFile;
         RightCastledFile = rightCastledFile;
@@ -169,6 +185,7 @@ public partial class Engine
 
     private static Dictionary<Piece, string> pieceStrings = new Dictionary<Piece, string>() {
         { Piece.Pawn, "♟" },
+        { Piece.VirginPawn, "♟" },
         { Piece.Rook, "♜" },
         { Piece.VirginRook, "♜" },
         { Piece.Knight, "♞" },
@@ -194,43 +211,43 @@ public partial class Engine
     private string Algebraic(Move move)
     {
         var sb = new StringBuilder();
-        if (move.Type == Move.Special.Castle)
+        if (move.type == Move.Special.Castle)
         {
-            if (move.Target > move.Source) sb.Append('>');
+            if (move.target > move.source) sb.Append('>');
             else sb.Append('<');
         }
-        else if (move.Moved == Piece.Pawn)
+        else if (move.moved == Piece.Pawn || move.moved == Piece.VirginPawn)
         {
-            sb.Append((char)('a'+(move.Source%NFiles)));
-            if (move.Captured != Piece.None)
+            sb.Append((char)('a'+(move.source%NFiles)));
+            if (move.captured != Piece.None)
             {
-                sb.Append('x').Append((char)('a'+(move.Target%NFiles)));
+                sb.Append('x').Append((char)('a'+(move.target%NFiles)));
             }
-            sb.Append(move.Target/NFiles + 1);
-            if (move.Promotion != Piece.None
-                && move.Promotion != Piece.Pawn)
+            sb.Append(move.target/NFiles + 1);
+            if (move.promotion != Piece.None
+                && move.promotion != Piece.Pawn)
             {
                 sb.Append('=');
-                if (move.Promotion == Piece.Rook) sb.Append('R');
-                else if (move.Promotion == Piece.Knight) sb.Append('N');
-                else if (move.Promotion == Piece.Bishop) sb.Append('B');
-                else if (move.Promotion == Piece.Queen) sb.Append('Q');
+                if (move.promotion == Piece.Rook) sb.Append('R');
+                else if (move.promotion == Piece.Knight) sb.Append('N');
+                else if (move.promotion == Piece.Bishop) sb.Append('B');
+                else if (move.promotion == Piece.Queen) sb.Append('Q');
             }
         }
         else
         {
-            if (move.Moved == Piece.Rook
-                || move.Moved == Piece.VirginRook) sb.Append('R');
-            else if (move.Moved == Piece.Knight) sb.Append('N');
-            else if (move.Moved == Piece.Bishop) sb.Append('B');
-            else if (move.Moved == Piece.Queen) sb.Append('Q');
-            else if (move.Moved == Piece.King
-                     || move.Moved == Piece.VirginKing) sb.Append('K');
+            if (move.moved == Piece.Rook
+                || move.moved == Piece.VirginRook) sb.Append('R');
+            else if (move.moved == Piece.Knight) sb.Append('N');
+            else if (move.moved == Piece.Bishop) sb.Append('B');
+            else if (move.moved == Piece.Queen) sb.Append('Q');
+            else if (move.moved == Piece.King
+                     || move.moved == Piece.VirginKing) sb.Append('K');
 
-            if (move.Captured != Piece.None) sb.Append('x');
+            if (move.captured != Piece.None) sb.Append('x');
 
-            sb.Append((char)('a'+(move.Target%NFiles)));
-            sb.Append(move.Target/NFiles + 1);
+            sb.Append((char)('a'+(move.target%NFiles)));
+            sb.Append(move.target/NFiles + 1);
         }
         return sb.ToString();
     }
@@ -241,6 +258,9 @@ public partial class Engine
 
         foreach (Move next in nexts)
         {
+            if (next.type == Move.Special.None)
+                continue;
+
             PlayMove(next);
             var nextnexts = FindPseudoLegalMoves(next);
 
@@ -272,14 +292,14 @@ public partial class Engine
                 foreach (Move move in ambiguous[algebraic])
                 {
                     // check which coordinates (file/rank) clash
-                    int file = GetFile(move.Source);
-                    int rank = GetRank(move.Source);
+                    int file = GetFile(move.source);
+                    int rank = GetRank(move.source);
                     bool repeatFile = false;
                     bool repeatRank = false;
                     foreach (Move clash in ambiguous[algebraic].Where(x=> x!=move))
                     {
-                        repeatFile |= file == GetFile(clash.Source);
-                        repeatRank |= rank == GetRank(clash.Source);
+                        repeatFile |= file == GetFile(clash.source);
+                        repeatRank |= rank == GetRank(clash.source);
                     }
                     // if no shared file, use file
                     string disambiguated;
@@ -342,7 +362,7 @@ public partial class Engine
         if (prevMove != null)
         {
             UndoMove(prevMove);
-            prevMove = prevMove.Previous;
+            prevMove = prevMove.previous;
             legalMoves = FindLegalMoves(prevMove);
         }
         else

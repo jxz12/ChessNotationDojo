@@ -1,33 +1,182 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+
 using UnityEngine;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    // TODO: options to make invisible/pulse
-    //       flip board
-    //       color schemes
-    //       puzzles/player vs computer/player vs player
-
-    [SerializeField] GridLayoutGroup board;
-    [SerializeField] List<Text> squares; // TODO: change to a class Square and make it any size
-    [SerializeField] Button N, B, R, Q, K, x, eq;
-    [SerializeField] Button O_O, O_O_O;
-    [SerializeField] List<Button> files; // TODO: change this to be variable based on board size
-    [SerializeField] List<Button> ranks;
-
-    private Engine thomas;
+    [SerializeField] TextAsset m8n2, m8n3, m8n4;
+    [Serializable] public class Puzzle
+    {
+        public string name;
+        public string FEN;
+        public string PGN;
+        public bool solved;
+    }
+    List<Puzzle> puzzles2, puzzles3, puzzles4;
+    [SerializeField] Text str2, str3, str4;
     void Awake()
     {
-        // thomas = new Engine();
-        thomas = new Engine("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+        puzzles2 = InitPuzzles(m8n2.text, Application.persistentDataPath+"m8n2.gd", str2);
+        puzzles3 = InitPuzzles(m8n3.text, Application.persistentDataPath+"m8n3.gd", str3);
+        puzzles4 = InitPuzzles(m8n4.text, Application.persistentDataPath+"m8n4.gd", str4);
     }
 
-    private HashSet<string> allCandidates;
-    private string candidate;
+    List<Puzzle> InitPuzzles(string input, string path, Text toAppend)
+    {
+        List<Puzzle> puzzles = null;
+        try
+        {
+            if (!File.Exists(path)) 
+            {
+                puzzles = new List<Puzzle>();
+                foreach (string line in Regex.Split(input, "\r\n|\r|\n"))
+                {
+                    if (Regex.IsMatch(line, @".*vs.*"))
+                    {
+                        puzzles.Add(new Puzzle());
+                        puzzles[puzzles.Count-1].name = line;
+                        puzzles[puzzles.Count-1].solved = false;
+                    }
+                    else if (Regex.IsMatch(line, @"(([prnbqkPRNBQK12345678]*/){7})([prnbqkPRNBQK12345678]*).*"))
+                    {
+                        puzzles[puzzles.Count-1].FEN = line;
+                    }
+                    else if (Regex.IsMatch(line, @"1\..*"))
+                    {
+                        puzzles[puzzles.Count-1].PGN = line;
+                    }
+                }
+                SaveAllPuzzles();
+            }
+            else
+            {
+                BinaryFormatter bf = new BinaryFormatter();
+                FileStream fs = File.Open(path, FileMode.Open);
+                puzzles = (List<Puzzle>)bf.Deserialize(fs);
+            }
+        }
+        catch (Exception e)
+        {
+            print(e);
+        }
+
+        int total=0, solved=0;
+        foreach (Puzzle p in puzzles)
+        {
+            total += 1;
+            if (p.solved)
+                solved += 1;
+        }
+        toAppend.text += "\n"+solved+"/"+total;
+        return puzzles;
+    }
+    void SaveAllPuzzles()
+    {
+        SavePuzzle(puzzles2, Application.persistentDataPath+"m8n2.gd");
+        SavePuzzle(puzzles3, Application.persistentDataPath+"m8n3.gd");
+        SavePuzzle(puzzles4, Application.persistentDataPath+"m8n4.gd");
+    }
+    void SavePuzzle(List<Puzzle> puzzles, string path)
+    {
+        try
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            FileStream fs = File.Create(path);
+            bf.Serialize(fs, puzzles);
+            fs.Close();
+        }
+        catch (Exception e)
+        {
+            print(e);
+        }
+    }
+    public void ResetProgress()
+    {
+        try
+        {
+            File.Delete(Application.persistentDataPath+"m8n2.gd");
+            File.Delete(Application.persistentDataPath+"m8n3.gd");
+            File.Delete(Application.persistentDataPath+"m8n4.gd");
+            // TODO: reload scene
+        }
+        catch (Exception e)
+        {
+            print(e);
+        }
+    }
+    public void RandomPuzzle2()
+    {
+        StartPuzzle(puzzles2);
+    }
+    public void RandomPuzzle3()
+    {
+        StartPuzzle(puzzles3);
+    }
+    public void RandomPuzzle4()
+    {
+        StartPuzzle(puzzles4);
+    }
+
+    [SerializeField] GameObject menuTop, gameTop;
+    Queue<string> sequence;
+    Puzzle chosenPuzzle;
+    void StartPuzzle(List<Puzzle> choices)
+    {
+        int unsolved=0;
+        foreach (Puzzle p in choices)
+        {
+            if (!p.solved)
+                unsolved += 1;
+        }
+        int choice = UnityEngine.Random.Range(0,unsolved);
+        int counter = 0;
+        foreach (Puzzle p in choices)
+        {
+            if (!p.solved)
+                counter += 1;
+            if (counter == choice)
+                break;
+        }
+        chosenPuzzle = choices[counter];
+        print(chosenPuzzle.name);
+        menuTop.SetActive(false);
+        gameTop.SetActive(true);
+        LoadGame(chosenPuzzle.FEN);
+
+        sequence = new Queue<string>();
+        foreach (string token in Regex.Split(chosenPuzzle.PGN, " "))
+        {
+            if (!Regex.IsMatch(token, @"[0-9]+\.+") && token.Length > 0)
+            {
+                sequence.Enqueue(token.Trim(new char[]{'#','+'}));
+            }
+        }
+    }
+    public void StartFullGame()
+    {
+        sequence = null;
+        menuTop.SetActive(false);
+        gameTop.SetActive(true);
+        LoadGame();
+        // thomas = new Engine("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+        // thomas = new Engine("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ");
+        // thomas = new Engine("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
+        // thomas = new Engine("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
+        // thomas = new Engine("knbr/p3/4/3P/RBNK w Qk -", 1, 2, false, false);
+        // thomas = new Engine("kbnr/pppp/4/4/4/4/pppp/KBNR w KK -", 1, 2, false, false);
+    }
+
+
+    [SerializeField] Button N, B, R, Q, K, x, eq;
+    [SerializeField] Button O_O, O_O_O;
+
     void Start()
     {
         N.onClick.AddListener(()=> InputChar('N'));
@@ -39,25 +188,83 @@ public class GameManager : MonoBehaviour
         eq.onClick.AddListener(()=> InputChar('='));
         O_O.onClick.AddListener(()=> InputChar('>'));
         O_O_O.onClick.AddListener(()=> InputChar('<'));
-        for (int i=0; i<files.Count; i++)
+    }
+
+
+    private Engine thomas;
+
+    [SerializeField] GameObject squarePrefab;
+    [SerializeField] GameObject coordPrefab;
+
+    [SerializeField] GridLayoutGroup squaresParent;
+    [SerializeField] HorizontalLayoutGroup ranksParent;
+    [SerializeField] HorizontalLayoutGroup filesParent;
+
+    [SerializeField] Color lightSq, darkSq;
+    List<Text> squares;
+    List<Button> ranks;
+    List<Button> files;
+
+    private HashSet<string> allCandidates;
+    private string candidate;
+
+    public void LoadGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    {
+        thomas = new Engine(FEN);
+        files = new List<Button>();
+        for (int i=0; i<thomas.NFiles; i++)
         {
             char input = (char)('a'+i);
-            files[i].onClick.AddListener(()=> InputChar(input));
+            var file = Instantiate(coordPrefab);
+            file.GetComponent<Button>().onClick.AddListener(()=> InputChar(input));
+            file.GetComponentInChildren<Text>().text = file.name = input.ToString();
+            file.transform.SetParent(filesParent.transform, false);
+            file.transform.SetAsLastSibling();
+
+            files.Add(file.GetComponent<Button>());
         }
-        for (int i=0; i<ranks.Count; i++)
+        ranks = new List<Button>();
+        for (int i=0; i<thomas.NRanks; i++)
         {
             char input = (char)('1'+i);
-            ranks[i].onClick.AddListener(()=> InputChar(input));
+            var rank = Instantiate(coordPrefab);
+            rank.GetComponent<Button>().onClick.AddListener(()=> InputChar(input));
+            rank.GetComponentInChildren<Text>().text = rank.name = input.ToString();
+            rank.transform.SetParent(ranksParent.transform, false);
+            rank.transform.SetAsLastSibling();
+
+            ranks.Add(rank.GetComponent<Button>());
         }
-        // var rect = board.GetComponent<RectTransform>().rect;
-        // board.cellSize = new Vector2(rect.width, rect.height) / 8;
+        squares = new List<Text>();
+        for (int i=0; i<thomas.NRanks; i++)
+        {
+            for (int j=0; j<thomas.NFiles; j++)
+            {
+                var square = Instantiate(squarePrefab);
+                square.GetComponent<Image>().color = (i+j)%2==0? darkSq : lightSq;
+                square.name = i+" "+j;
+                square.transform.SetParent(squaresParent.transform, false);
+                square.transform.SetAsLastSibling();
+
+                squares.Add(square.GetComponentInChildren<Text>());
+            }
+        }
+        squaresParent.gameObject.GetComponent<AspectRatioFitter>().aspectRatio = (float)thomas.NFiles/thomas.NRanks;
+        var rect = squaresParent.GetComponent<RectTransform>().rect;
+        float width = rect.height / (float)thomas.NRanks;
+        squaresParent.cellSize = new Vector2(width, width);
 
         candidate = "";
         allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
         ShowPossibleChars();
         Display();
-        Perft();
     }
+    void EndGame()
+    {
+        gameTop.SetActive(false);
+        menuTop.SetActive(true);
+    }
+
     [SerializeField] int ply;
     public async void Perft()
     {
@@ -73,14 +280,20 @@ public class GameManager : MonoBehaviour
         print(best.Item1 + " " + best.Item2);
         print(Time.time - start);
     }
-
-
-
-    void Update()
+    public void FlipTable()
     {
-        ReadCharFromKeyboard();
-        if (Input.GetKeyDown(KeyCode.Return)) Evaluate();
+        if (squaresParent.startCorner == GridLayoutGroup.Corner.LowerLeft)
+        {
+            squaresParent.startCorner = GridLayoutGroup.Corner.UpperRight;
+        }
+        else
+        {
+            squaresParent.startCorner = GridLayoutGroup.Corner.LowerLeft;
+        }
     }
+
+
+
     void ShowPossibleChars()
     {
         N.interactable = false;
@@ -131,13 +344,42 @@ public class GameManager : MonoBehaviour
     }
     void InputChar(char input)
     {
+        if (thomas == null)
+            return;
+
         candidate += input;
         if (allCandidates.Contains(candidate))
         {
-            thomas.PlayMoveAlgebraic(candidate);
-            moves.Push(candidate);
-            undos.Clear();
-
+            if (sequence != null && sequence.Count > 0) // if puzzle
+            {
+                if (candidate == sequence.Peek())
+                {
+                    thomas.PlayMoveAlgebraic(candidate);
+                    sequence.Dequeue();
+                    if (sequence.Count > 0)
+                    {
+                        thomas.PlayMoveAlgebraic(sequence.Dequeue());
+                    }
+                    else
+                    {
+                        print("Well done!");
+                        chosenPuzzle.solved = true;
+                        SaveAllPuzzles();
+                        // EndGame();
+                    }
+                }
+                else
+                {
+                    print("WRONG");
+                    // EndGame();
+                }
+            }
+            else
+            {
+                thomas.PlayMoveAlgebraic(candidate);
+                moves.Push(candidate);
+                undos.Clear();
+            }
             candidate = "";
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
             Display();
@@ -149,6 +391,7 @@ public class GameManager : MonoBehaviour
         if (moves.Count > 0)
         {
             thomas.UndoLastMove();
+            candidate = "";
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
             undos.Push(moves.Pop());
             Display();
@@ -167,36 +410,9 @@ public class GameManager : MonoBehaviour
             ShowPossibleChars();
         }
     }
-    // string GetMoveSheet()
-    // {
-    //     bool check = thomas.IsCheck();
-    //     if (check && allCandidates.Count == 0) // checkmate
-    //     {
-    //         candidate += '#';
-    //         if (moves.Count%2 == 0)
-    //         {
-    //             candidate += " 1-0";
-    //         }
-    //         else
-    //         {
-    //             candidate += " 0-1";
-    //         }
-    //     }
-    //     else if (check && allCandidates.Count > 0) // check
-    //     {
-    //         candidate += '+';
-    //     }
-    //     else if (!check && allCandidates.Count == 0) // draw
-    //     {
-    //         candidate += " ½-½";
-    //     }
-    // }
 
     Stack<string> moves = new Stack<string>();
     Stack<string> undos = new Stack<string>();
-    void WriteMove(bool check)
-    {
-    }
     string MovesToString()
     {
         var sb = new StringBuilder();
@@ -223,7 +439,7 @@ public class GameManager : MonoBehaviour
         candidate = candidate.Substring(0, candidate.Length-1);
         ShowPossibleChars();
     }
-    void ReadCharFromKeyboard()
+    void Update()
     {
         if (Input.GetKeyDown(KeyCode.LeftArrow)) UndoMove();
         else if (Input.GetKeyDown(KeyCode.RightArrow)) RedoMove();
@@ -241,23 +457,23 @@ public class GameManager : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.X) && x.interactable) InputChar('x');
         else if (Input.GetKeyDown(KeyCode.Equals) && eq.interactable) InputChar('=');
 
-        else if (Input.GetKeyDown(KeyCode.A) && files[0].interactable) InputChar('a');
-        else if (Input.GetKeyDown(KeyCode.B) && files[1].interactable) InputChar('b');
-        else if (Input.GetKeyDown(KeyCode.C) && files[2].interactable) InputChar('c');
-        else if (Input.GetKeyDown(KeyCode.D) && files[3].interactable) InputChar('d');
-        else if (Input.GetKeyDown(KeyCode.E) && files[4].interactable) InputChar('e');
-        else if (Input.GetKeyDown(KeyCode.F) && files[5].interactable) InputChar('f');
-        else if (Input.GetKeyDown(KeyCode.G) && files[6].interactable) InputChar('g');
-        else if (Input.GetKeyDown(KeyCode.H) && files[7].interactable) InputChar('h');
+        // else if (Input.GetKeyDown(KeyCode.A) && files[0].interactable) InputChar('a');
+        // else if (Input.GetKeyDown(KeyCode.B) && files[1].interactable) InputChar('b');
+        // else if (Input.GetKeyDown(KeyCode.C) && files[2].interactable) InputChar('c');
+        // else if (Input.GetKeyDown(KeyCode.D) && files[3].interactable) InputChar('d');
+        // else if (Input.GetKeyDown(KeyCode.E) && files[4].interactable) InputChar('e');
+        // else if (Input.GetKeyDown(KeyCode.F) && files[5].interactable) InputChar('f');
+        // else if (Input.GetKeyDown(KeyCode.G) && files[6].interactable) InputChar('g');
+        // else if (Input.GetKeyDown(KeyCode.H) && files[7].interactable) InputChar('h');
 
-        else if (Input.GetKeyDown(KeyCode.Alpha1) && ranks[0].interactable) InputChar('1');
-        else if (Input.GetKeyDown(KeyCode.Alpha2) && ranks[1].interactable) InputChar('2');
-        else if (Input.GetKeyDown(KeyCode.Alpha3) && ranks[2].interactable) InputChar('3');
-        else if (Input.GetKeyDown(KeyCode.Alpha4) && ranks[3].interactable) InputChar('4');
-        else if (Input.GetKeyDown(KeyCode.Alpha5) && ranks[4].interactable) InputChar('5');
-        else if (Input.GetKeyDown(KeyCode.Alpha6) && ranks[5].interactable) InputChar('6');
-        else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
-        else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
+        // else if (Input.GetKeyDown(KeyCode.Alpha1) && ranks[0].interactable) InputChar('1');
+        // else if (Input.GetKeyDown(KeyCode.Alpha2) && ranks[1].interactable) InputChar('2');
+        // else if (Input.GetKeyDown(KeyCode.Alpha3) && ranks[2].interactable) InputChar('3');
+        // else if (Input.GetKeyDown(KeyCode.Alpha4) && ranks[3].interactable) InputChar('4');
+        // else if (Input.GetKeyDown(KeyCode.Alpha5) && ranks[4].interactable) InputChar('5');
+        // else if (Input.GetKeyDown(KeyCode.Alpha6) && ranks[5].interactable) InputChar('6');
+        // else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
+        // else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
     }
 
     void ClearBoard()

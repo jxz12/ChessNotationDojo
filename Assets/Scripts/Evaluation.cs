@@ -29,11 +29,11 @@ public partial class Engine
         {
             if (ply == 0)
             {
-                if (current.Captured != Piece.None) captures += 1;
-                if (current.Type == Move.Special.EnPassant) eps += 1;
-                if (current.Type == Move.Special.Castle) castles += 1;
-                if (current.Promotion != Piece.None
-                    && current.Moved == Piece.Pawn) promos += 1;
+                if (current.captured != Piece.None) captures += 1;
+                if (current.type == Move.Special.EnPassant) eps += 1;
+                if (current.type == Move.Special.Castle) castles += 1;
+                if (current.promotion != Piece.None
+                    && current.moved == Piece.Pawn) promos += 1;
                 if (IsCheck(current)) checks += 1;
 
                 UndoMove(current);
@@ -44,7 +44,8 @@ public partial class Engine
                 int count = 0;
                 foreach (Move next in nexts)
                 {
-                    count += Perft(next, ply-1);
+                    if (next.type != Move.Special.None)
+                        count += Perft(next, ply-1);
                 }
                 UndoMove(current);
                 return count;
@@ -95,6 +96,5 @@ public partial class Engine
                 return eval;
             }
         }
-
     }
 }
