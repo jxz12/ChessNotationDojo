@@ -11,7 +11,7 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] TextAsset m8n2, m8n3, m8n4;
+    [SerializeField] TextAsset m8n2, m8n3, m8n4, quotes;
     [Serializable] public class Puzzle
     {
         public string name;
@@ -26,6 +26,7 @@ public class GameManager : MonoBehaviour
         puzzles2 = InitPuzzles(m8n2.text, Application.persistentDataPath+"m8n2.gd", str2);
         puzzles3 = InitPuzzles(m8n3.text, Application.persistentDataPath+"m8n3.gd", str3);
         puzzles4 = InitPuzzles(m8n4.text, Application.persistentDataPath+"m8n4.gd", str4);
+        quotesList = LoadQuotes(quotes.text);
     }
 
     List<Puzzle> InitPuzzles(string input, string path, Text toAppend)
@@ -77,6 +78,50 @@ public class GameManager : MonoBehaviour
         toAppend.text += "\n"+solved+"/"+total;
         return puzzles;
     }
+    List<Tuple<string, string>> quotesList;
+    [SerializeField] Text quoteText, titleText;
+    List<Tuple<string, string>> LoadQuotes(string input)
+    {
+        var list = new List<Tuple<string, string>>();
+        StringBuilder quote = new StringBuilder(), author = new StringBuilder();
+        bool quoting = false, authoring = false;
+        foreach (char c in input)
+        {
+            if (c == '"')
+            {
+                if (quoting)
+                {
+                    quoting = false;
+                    if (quote[quote.Length-1] != '.' && quote[quote.Length-1] != '?' && quote[quote.Length-1] != '!' && quote[quote.Length-1] != '\'')
+                        quote.Append('.');
+                }
+                else
+                {
+                    quoting = true;
+                }
+            }
+            else if (c == '(' && !quoting)
+            {
+                authoring = true;
+            }
+            else if (c == ')' && !quoting)
+            {
+                authoring = false;
+                list.Add(Tuple.Create(author.ToString(), quote.ToString()));
+                // print(list[list.Count-1].Item2);
+                author.Clear();
+                quote.Clear();
+            }
+            else
+            {
+                if (authoring)
+                    author.Append(c=='\n'? ' ':c);
+                else if (quoting)
+                    quote.Append(c=='\n'? ' ':c);
+            }
+        }
+        return list;
+    }
     void SaveAllPuzzles()
     {
         SavePuzzle(puzzles2, Application.persistentDataPath+"m8n2.gd");
@@ -124,7 +169,6 @@ public class GameManager : MonoBehaviour
         StartPuzzle(puzzles4);
     }
 
-    [SerializeField] GameObject menuTop, gameTop;
     Queue<string> sequence;
     Puzzle chosenPuzzle;
     void StartPuzzle(List<Puzzle> choices)
@@ -145,11 +189,6 @@ public class GameManager : MonoBehaviour
                 break;
         }
         chosenPuzzle = choices[counter];
-        print(chosenPuzzle.name);
-        menuTop.SetActive(false);
-        gameTop.SetActive(true);
-        LoadGame(chosenPuzzle.FEN);
-
         sequence = new Queue<string>();
         foreach (string token in Regex.Split(chosenPuzzle.PGN, " "))
         {
@@ -158,19 +197,23 @@ public class GameManager : MonoBehaviour
                 sequence.Enqueue(token.Trim(new char[]{'#','+'}));
             }
         }
+        titleText.text = chosenPuzzle.name;
+        StartGame(chosenPuzzle.FEN);
+        if (chosenPuzzle.PGN.Substring(0,4) == "1...")
+            FlipBoard(true);
+        else
+            FlipBoard(false);
     }
     public void StartFullGame()
     {
-        sequence = null;
-        menuTop.SetActive(false);
-        gameTop.SetActive(true);
-        LoadGame();
         // thomas = new Engine("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
         // thomas = new Engine("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ");
         // thomas = new Engine("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
         // thomas = new Engine("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
         // thomas = new Engine("knbr/p3/4/3P/RBNK w Qk -", 1, 2, false, false);
         // thomas = new Engine("kbnr/pppp/4/4/4/4/pppp/KBNR w KK -", 1, 2, false, false);
+        sequence = null;
+        StartGame();
     }
 
 
@@ -208,8 +251,11 @@ public class GameManager : MonoBehaviour
     private HashSet<string> allCandidates;
     private string candidate;
 
-    public void LoadGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    void StartGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
+        if (thomas != null)
+            ClearGame();
+
         thomas = new Engine(FEN);
         files = new List<Button>();
         for (int i=0; i<thomas.NFiles; i++)
@@ -258,11 +304,32 @@ public class GameManager : MonoBehaviour
         allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
         ShowPossibleChars();
         Display();
+
+        var chosenQuote = quotesList[UnityEngine.Random.Range(0, quotesList.Count)];
+        quoteText.text = "\"" + chosenQuote.Item2 + "\"—" + chosenQuote.Item1;
+        GetComponent<Animator>().SetBool("Curtains", false);
     }
-    void EndGame()
+    public void EndGame()
     {
-        gameTop.SetActive(false);
-        menuTop.SetActive(true);
+        GetComponent<Animator>().SetBool("Curtains", true);
+    }
+    void ClearGame()
+    {
+        foreach (var square in squares)
+        {
+            Destroy(square.transform.parent.gameObject);
+        }
+        squares.Clear();
+        foreach (var rank in ranks)
+        {
+            Destroy(rank.gameObject);
+        }
+        ranks.Clear();
+        foreach (var file in files)
+        {
+            Destroy(file.gameObject);
+        }
+        files.Clear();
     }
 
     [SerializeField] int ply;
@@ -280,9 +347,9 @@ public class GameManager : MonoBehaviour
         print(best.Item1 + " " + best.Item2);
         print(Time.time - start);
     }
-    public void FlipTable()
+    public void FlipBoard(bool flipped)
     {
-        if (squaresParent.startCorner == GridLayoutGroup.Corner.LowerLeft)
+        if (flipped)
         {
             squaresParent.startCorner = GridLayoutGroup.Corner.UpperRight;
         }
@@ -358,6 +425,8 @@ public class GameManager : MonoBehaviour
                     sequence.Dequeue();
                     if (sequence.Count > 0)
                     {
+                        // TODO: small delay here
+                        // TODO: animations
                         thomas.PlayMoveAlgebraic(sequence.Dequeue());
                     }
                     else
