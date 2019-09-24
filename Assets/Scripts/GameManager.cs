@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -79,7 +80,7 @@ public class GameManager : MonoBehaviour
         return puzzles;
     }
     List<Tuple<string, string>> quotesList;
-    [SerializeField] Text quoteText, titleText;
+    [SerializeField] Text quoteText, titleText; // TODO: scroll here if not fit
     List<Tuple<string, string>> LoadQuotes(string input)
     {
         var list = new List<Tuple<string, string>>();
@@ -188,7 +189,7 @@ public class GameManager : MonoBehaviour
             if (counter == choice)
                 break;
         }
-        chosenPuzzle = choices[counter];
+        chosenPuzzle = choices[0];
         sequence = new Queue<string>();
         foreach (string token in Regex.Split(chosenPuzzle.PGN, " "))
         {
@@ -421,39 +422,54 @@ public class GameManager : MonoBehaviour
             {
                 if (candidate == sequence.Peek())
                 {
-                    thomas.PlayMoveAlgebraic(candidate);
-                    sequence.Dequeue();
+                    // thomas.PlayMoveAlgebraic(sequence.Dequeue());
+                    // Display(); // don't call PlayMove as we don't want to change keyboard
+                    PlayMove(sequence.Dequeue());
                     if (sequence.Count > 0)
                     {
-                        // TODO: small delay here
-                        // TODO: animations
-                        thomas.PlayMoveAlgebraic(sequence.Dequeue());
+                        StartCoroutine(WaitThenPlayMove(sequence.Dequeue(), 1));
+                        StartCoroutine(DisplayTitleForTime("Correct!", 1));
                     }
                     else
                     {
-                        print("Well done!");
+                        titleText.text = "Well done!";
                         chosenPuzzle.solved = true;
                         SaveAllPuzzles();
-                        // EndGame();
                     }
                 }
                 else
                 {
-                    print("WRONG");
-                    // EndGame();
+                    StartCoroutine(DisplayTitleForTime("WRONG", 1));
+                    candidate = "";
                 }
             }
-            else
+            else // not puzzle
             {
-                thomas.PlayMoveAlgebraic(candidate);
-                moves.Push(candidate);
-                undos.Clear();
+                PlayMove(candidate);
             }
-            candidate = "";
-            allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
-            Display();
         }
         ShowPossibleChars();
+    }
+    void PlayMove(string move)
+    {
+        thomas.PlayMoveAlgebraic(candidate);
+        candidate = "";
+        allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+        moves.Push(candidate);
+        undos.Clear();
+        Display();
+    }
+    IEnumerator WaitThenPlayMove(string move, float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        PlayMove(move);
+    }
+    IEnumerator DisplayTitleForTime(string message, float seconds)
+    {
+        string before = titleText.text;
+        titleText.text = message;
+        yield return new WaitForSeconds(seconds);
+        titleText.text = before;
     }
     void UndoMove()
     {
@@ -559,6 +575,7 @@ public class GameManager : MonoBehaviour
     }
     void Display()
     {
+        // TODO: animations
         ClearBoard();
         for (int i=0; i<squares.Count; i++)
         {
