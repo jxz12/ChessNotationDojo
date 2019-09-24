@@ -10,9 +10,10 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] Button N, B, R, Q, K, x, eq;
-    [SerializeField] Button O_O, O_O_O;
-    [SerializeField] Text quoteText, titleText; // TODO: scroll here if not fit
+    [SerializeField] Button N, B, R, Q, K, x, eq, O_O, O_O_O;
+    [SerializeField] Button undoButton, redoButton, quitButton;
+    [SerializeField] Text titleText;
+    [SerializeField] MessageScroller quoteScroller;
 
     void Start()
     {
@@ -25,6 +26,9 @@ public class GameManager : MonoBehaviour
         eq.onClick.AddListener(()=> InputChar('='));
         O_O.onClick.AddListener(()=> InputChar('>'));
         O_O_O.onClick.AddListener(()=> InputChar('<'));
+
+        undoButton.onClick.AddListener(()=> UndoMove());
+        redoButton.onClick.AddListener(()=> RedoMove());
     }
 
     private Engine thomas;
@@ -57,25 +61,21 @@ public class GameManager : MonoBehaviour
             }
         }
         this.OnSolved = OnSolved;
-        StartGame(FEN);
         if (PGN.Substring(0,4) == "1...")
             FlipBoard(true);
         else
             FlipBoard(false);
+        
+        quitButton.GetComponent<Image>().color = Color.red;
+        StartGame(FEN);
     }
-    public void StartFullGame()
+    public void StartFullGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
     {
-        // thomas = new Engine("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
-        // thomas = new Engine("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ");
-        // thomas = new Engine("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1");
-        // thomas = new Engine("r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0");
-        // thomas = new Engine("knbr/p3/4/3P/RBNK w Qk -", 1, 2, false, false);
-        // thomas = new Engine("kbnr/pppp/4/4/4/4/pppp/KBNR w KK -", 1, 2, false, false);
         sequence = null;
-        StartGame();
+        StartGame(FEN);
     }
 
-    void StartGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    void StartGame(string FEN)
     {
         if (thomas != null)
             ClearGame();
@@ -127,17 +127,11 @@ public class GameManager : MonoBehaviour
         candidate = "";
         allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
         ShowPossibleChars();
-        Display();
-
-        GetComponent<Animator>().SetBool("Curtains", false);
-    }
-    public void EndGame()
-    {
-        GetComponent<Animator>().SetBool("Curtains", true);
+        DisplayPieces();
     }
     public void SetQuote(string quote)
     {
-        quoteText.text = quote;
+        quoteScroller.SetText(quote);
     }
     public void SetTitle(string title)
     {
@@ -147,7 +141,6 @@ public class GameManager : MonoBehaviour
     {
         foreach (var square in squares)
         {
-            // TODO: this is messy
             Destroy(square.transform.parent.gameObject);
         }
         squares.Clear();
@@ -213,6 +206,8 @@ public class GameManager : MonoBehaviour
         {
             b.interactable = false;
         }
+        if (candidate == null)
+            return;
 
         int idx = candidate.Length;
         foreach (string move in allCandidates)
@@ -258,18 +253,19 @@ public class GameManager : MonoBehaviour
                     if (sequence.Count > 0)
                     {
                         StartCoroutine(WaitThenPlayMove(sequence.Dequeue(), 1));
-                        StartCoroutine(DisplayTitleForTime("Correct!", 1));
+                        StartCoroutine(DisplayTitleForTime("Correct!", 1, Color.green, FontStyle.Bold));
                     }
                     else
                     {
                         titleText.text = "Well done!";
+                        quitButton.GetComponent<Image>().color = Color.green;
                         OnSolved.Invoke();
                     }
                 }
                 else
                 {
                     // TODO: show escaping variation
-                    StartCoroutine(DisplayTitleForTime("WRONG", 1));
+                    StartCoroutine(DisplayTitleForTime("WRONG", 1, Color.red, FontStyle.Bold));
                     candidate = "";
                 }
             }
@@ -280,76 +276,92 @@ public class GameManager : MonoBehaviour
         }
         ShowPossibleChars();
     }
+
+    Stack<string> undos = new Stack<string>();
+    Stack<string> redos = new Stack<string>();
     void PlayMove(string move, bool updateKeyboard=true)
     {
         thomas.PlayMoveAlgebraic(move);
-        moves.Push(move);
-        undos.Clear();
-        Display();
+        undos.Push(move);
+        redos.Clear();
+        DisplayPieces();
         if (updateKeyboard)
         {
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
             candidate = "";
             ShowPossibleChars();
         }
+        undoButton.interactable = true;
+        redoButton.interactable = false;
     }
     IEnumerator WaitThenPlayMove(string move, float seconds)
     {
         yield return new WaitForSeconds(seconds);
         PlayMove(move);
     }
-    IEnumerator DisplayTitleForTime(string message, float seconds)
+    IEnumerator DisplayTitleForTime(string message, float seconds, Color col, FontStyle style)
     {
         string before = titleText.text;
+        Color colBefore = titleText.color;
+        FontStyle styBefore = titleText.fontStyle;
+
         titleText.text = message;
+        titleText.color = col;
+        titleText.fontStyle = style;
         yield return new WaitForSeconds(seconds);
         titleText.text = before;
+        titleText.color = colBefore;
+        titleText.fontStyle = styBefore;
     }
     void UndoMove()
     {
-        if (moves.Count > 0)
+        if (undos.Count > 0)
         {
             thomas.UndoLastMove();
-            candidate = "";
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
-            undos.Push(moves.Pop());
-            Display();
+            candidate = sequence==null? "" : null;
+
+            redos.Push(undos.Pop());
+            DisplayPieces();
             ShowPossibleChars();
         }
+        redoButton.interactable = true;
+        undoButton.interactable = undos.Count > 0;
     }
     void RedoMove()
     {
-        if (undos.Count > 0)
+        if (redos.Count > 0)
         {
-            string redo = undos.Pop();
+            string redo = redos.Pop();
             thomas.PlayMoveAlgebraic(redo);
             allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
-            moves.Push(redo);
-            Display();
+            candidate = sequence==null || redos.Count==0? "" : null;
+
+            undos.Push(redo);
+            DisplayPieces();
             ShowPossibleChars();
         }
+        redoButton.interactable = redos.Count > 0;
+        undoButton.interactable = true;
     }
-
-    Stack<string> moves = new Stack<string>();
-    Stack<string> undos = new Stack<string>();
-    string MovesToString()
-    {
-        var sb = new StringBuilder();
-        int i=0;
-        foreach (string move in moves)
-        {
-            if (i%2 == 1)
-            {
-                sb.Append(' ').Append(move);
-            }
-            else
-            {
-                if (i != 0) sb.Append(';');
-                sb.Append(move);
-            }
-        }
-        return sb.ToString();
-    }
+    // string MovesToString()
+    // {
+    //     var sb = new StringBuilder();
+    //     int i=0;
+    //     foreach (string move in moves)
+    //     {
+    //         if (i%2 == 1)
+    //         {
+    //             sb.Append(' ').Append(move);
+    //         }
+    //         else
+    //         {
+    //             if (i != 0) sb.Append(';');
+    //             sb.Append(move);
+    //         }
+    //     }
+    //     return sb.ToString();
+    // }
     void UndoChar()
     {
         if (candidate.Length == 0)
@@ -408,7 +420,7 @@ public class GameManager : MonoBehaviour
         squares[position].color = colour;
         squares[position].text = letter;
     }
-    void Display()
+    void DisplayPieces()
     {
         // TODO: animations
         ClearBoard();

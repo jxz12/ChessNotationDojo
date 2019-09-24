@@ -44,7 +44,8 @@ public class Menu : MonoBehaviour
         }
         catch (Exception e)
         {
-            print(e);
+            // print(e);
+            print("Save file not present, so reading from TextAsset");
             puzzles = new List<Puzzle>();
             foreach (string line in Regex.Split(input, "\r\n|\r|\n"))
             {
@@ -90,6 +91,7 @@ public class Menu : MonoBehaviour
             }
             else if (c == '(' && !quoting)
             {
+                if (quoting) throw new Exception("MAD");
                 authoring = true;
             }
             else if (c == ')' && !quoting)
@@ -162,6 +164,16 @@ public class Menu : MonoBehaviour
             print(e);
         }
     }
+    public void StartFullGame()
+    {
+        // "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
+        // "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - "
+        // "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"
+        // "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0"
+        // "knbr/p3/4/3P/RBNK w Qk -"
+        // "kbnr/pppp/4/4/4/4/pppp/KBNR w KK -"
+        gm.StartFullGame();
+    }
     public void RandomPuzzle2()
     {
         StartPuzzle(puzzles2);
@@ -190,12 +202,12 @@ public class Menu : MonoBehaviour
         {
             if (!p.solved)
             {
-                counter += 1;
                 if (counter == choice)
                 {
                     chosenPuzzle = p;
                     break;
                 }
+                counter += 1;
             }
         }
         if (chosenPuzzle == null)
@@ -206,10 +218,28 @@ public class Menu : MonoBehaviour
         gm.StartPuzzle(chosenPuzzle.FEN, chosenPuzzle.PGN,
                        ()=>{ chosenPuzzle.solved = true; SaveAllPuzzles(); ShowAllProgress(); });
         ChooseQuote();
+        Hide();
     }
     void ChooseQuote()
     {
         var chosenQuote = quotesList[UnityEngine.Random.Range(0, quotesList.Count)];
         gm.SetQuote("\"" + chosenQuote.Item2 + "\"—" + chosenQuote.Item1);
+    }
+    Vector2 velocity;
+    Vector2 targetPos;
+    void FixedUpdate()
+    {
+        var rt = GetComponent<RectTransform>();
+        rt.anchoredPosition = Vector2.SmoothDamp(rt.anchoredPosition, targetPos, ref velocity, .2f);
+    }
+    public void Hide()
+    {
+        targetPos = new Vector2(0, GetComponentInParent<CanvasScaler>().referenceResolution.y);
+        GetComponent<CanvasGroup>().blocksRaycasts = false;
+    }
+    public void Show()
+    {
+        targetPos = Vector2.zero;
+        GetComponent<CanvasGroup>().blocksRaycasts = true;
     }
 }
