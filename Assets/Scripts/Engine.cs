@@ -340,23 +340,6 @@ public partial class Engine
     {
         return legalMoves.Keys;
     }
-
-    // returns best move algebraic and evaluation
-    public Tuple<string, float> EvaluateBestMove(int ply)
-    {
-        float bestEval = float.MinValue;
-        string bestAlgebraic = null;
-        foreach (string algebraic in legalMoves.Keys)
-        {
-            float eval = NegaMax(legalMoves[algebraic], ply);
-            if (eval > bestEval)
-            {
-                bestEval = eval;
-                bestAlgebraic = algebraic;
-            }
-        }
-        return Tuple.Create(bestAlgebraic, bestEval);
-    }
     public void UndoLastMove()
     {
         if (prevMove != null)

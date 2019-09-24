@@ -12,7 +12,6 @@ public class MessageScroller : MonoBehaviour
     {
         maskRT = GetComponent<RectTransform>();
         textRT = message.GetComponent<RectTransform>();
-        // SetText(message.text);
     }
     string separator = "                            ";
     public void SetText(string text)

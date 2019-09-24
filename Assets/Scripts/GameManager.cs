@@ -11,7 +11,7 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     [SerializeField] Button N, B, R, Q, K, x, eq, O_O, O_O_O;
-    [SerializeField] Button undoButton, redoButton, quitButton;
+    [SerializeField] Button undoButton, redoButton, quitButton, evalButton;
     [SerializeField] Text titleText;
     [SerializeField] MessageScroller quoteScroller;
 
@@ -156,18 +156,21 @@ public class GameManager : MonoBehaviour
         files.Clear();
     }
 
-    [SerializeField] int ply;
-    public async void Perft()
+    public async void Perft(int ply)
     {
         float start = Time.time;
         await Task.Run(()=> print(thomas.Perft(ply)));
         print(Time.time - start);
     }
-    public async void Evaluate()
+    public async void Evaluate(int ply)
     {
         float start = Time.time;
         Tuple<string, float> best;
+
+        evalButton.interactable = false;
         best = await Task.Run(()=> thomas.EvaluateBestMove(ply));
+        evalButton.interactable = true;
+
         print(best.Item1 + " " + best.Item2);
         print(Time.time - start);
     }
@@ -259,6 +262,7 @@ public class GameManager : MonoBehaviour
                     {
                         titleText.text = "Well done!";
                         quitButton.GetComponent<Image>().color = Color.green;
+                        // evalButton.interactable = false;
                         OnSolved.Invoke();
                     }
                 }

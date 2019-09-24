@@ -493,7 +493,7 @@ public partial class Engine
     // returns if current move is checking enemy
     private bool IsCheck(Move current)
     {
-        // assume empty move for black
+        // assume empty move for opponent
         Move empty = new Move() { whiteMove = !current.whiteMove };
         foreach (Move next in FindPseudoLegalMoves(empty))
         {
