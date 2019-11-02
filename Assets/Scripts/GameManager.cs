@@ -11,6 +11,7 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     [SerializeField] Button N, B, R, Q, K, x, eq, O_O, O_O_O;
+    [SerializeField] HorizontalLayoutGroup ranksParent, filesParent;
     [SerializeField] Button undoButton, redoButton, quitButton, evalButton;
     [SerializeField] Text titleText;
     [SerializeField] MessageScroller quoteScroller;
@@ -33,15 +34,11 @@ public class GameManager : MonoBehaviour
 
     private Engine thomas;
 
-    [SerializeField] GameObject squarePrefab;
+    // private BoardAscii board;
+    // [SerializeField] BoardAscii boardPrefab;
+    [SerializeField] BoardAscii board;
+    
     [SerializeField] GameObject coordPrefab;
-
-    [SerializeField] GridLayoutGroup squaresParent;
-    [SerializeField] HorizontalLayoutGroup ranksParent;
-    [SerializeField] HorizontalLayoutGroup filesParent;
-
-    [SerializeField] Color lightSq, darkSq;
-    List<Text> squares;
     List<Button> ranks;
     List<Button> files;
 
@@ -62,9 +59,9 @@ public class GameManager : MonoBehaviour
         }
         this.OnSolved = OnSolved;
         if (PGN.Substring(0,4) == "1...")
-            FlipBoard(true);
+            board.FlipBoard(true);
         else
-            FlipBoard(false);
+            board.FlipBoard(false);
         
         quitButton.GetComponent<Image>().color = Color.red;
         StartGame(FEN);
@@ -105,29 +102,11 @@ public class GameManager : MonoBehaviour
 
             ranks.Add(rank.GetComponent<Button>());
         }
-        squares = new List<Text>();
-        for (int i=0; i<thomas.NRanks; i++)
-        {
-            for (int j=0; j<thomas.NFiles; j++)
-            {
-                var square = Instantiate(squarePrefab);
-                square.GetComponent<Image>().color = (i+j)%2==0? darkSq : lightSq;
-                square.name = i+" "+j;
-                square.transform.SetParent(squaresParent.transform, false);
-                square.transform.SetAsLastSibling();
-
-                squares.Add(square.GetComponentInChildren<Text>());
-            }
-        }
-        squaresParent.gameObject.GetComponent<AspectRatioFitter>().aspectRatio = (float)thomas.NFiles/thomas.NRanks;
-        var rect = squaresParent.GetComponent<RectTransform>().rect;
-        float width = rect.height / (float)thomas.NRanks;
-        squaresParent.cellSize = new Vector2(width, width);
+        board.SetFEN(thomas.ToFEN());
 
         candidate = "";
-        allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+        allCandidates = new HashSet<string>(thomas.GetPGNs());
         ShowPossibleChars();
-        DisplayPieces();
     }
     public void SetQuote(string quote)
     {
@@ -139,11 +118,6 @@ public class GameManager : MonoBehaviour
     }
     void ClearGame()
     {
-        foreach (var square in squares)
-        {
-            Destroy(square.transform.parent.gameObject);
-        }
-        squares.Clear();
         foreach (var rank in ranks)
         {
             Destroy(rank.gameObject);
@@ -159,35 +133,20 @@ public class GameManager : MonoBehaviour
     public async void Perft(int ply)
     {
         float start = Time.time;
-        await Task.Run(()=> print(thomas.Perft(ply)));
+        int nodes = await Task.Run(()=> thomas.Perft(ply));
+        print(nodes);
         print(Time.time - start);
     }
     public async void Evaluate(int ply)
     {
         float start = Time.time;
-        Tuple<string, float> best;
 
         evalButton.interactable = false;
-        best = await Task.Run(()=> thomas.EvaluateBestMove(ply));
+        var best = await Task.Run(()=> thomas.EvaluateBestMove(ply));
         evalButton.interactable = true;
 
         print(best.Item1 + " " + best.Item2);
         print(Time.time - start);
-    }
-    public void FlipBoard(bool flipped)
-    {
-        if (flipped)
-        {
-            squaresParent.startCorner = GridLayoutGroup.Corner.UpperRight;
-        }
-        else
-        {
-            squaresParent.startCorner = GridLayoutGroup.Corner.LowerLeft;
-        }
-    }
-    public void SetFont(Font font)
-    {
-        squarePrefab.GetComponentInChildren<Text>().font = font;
     }
 
     void ShowPossibleChars()
@@ -285,13 +244,13 @@ public class GameManager : MonoBehaviour
     Stack<string> redos = new Stack<string>();
     void PlayMove(string move, bool updateKeyboard=true)
     {
-        thomas.PlayMoveAlgebraic(move);
+        thomas.PlayPGN(move);
         undos.Push(move);
         redos.Clear();
-        DisplayPieces();
+        board.SetFEN(thomas.ToFEN());
         if (updateKeyboard)
         {
-            allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+            allCandidates = new HashSet<string>(thomas.GetPGNs());
             candidate = "";
             ShowPossibleChars();
         }
@@ -322,11 +281,11 @@ public class GameManager : MonoBehaviour
         if (undos.Count > 0)
         {
             thomas.UndoLastMove();
-            allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+            allCandidates = new HashSet<string>(thomas.GetPGNs());
             candidate = sequence==null? "" : null;
 
             redos.Push(undos.Pop());
-            DisplayPieces();
+            board.SetFEN(thomas.ToFEN());
             ShowPossibleChars();
         }
         redoButton.interactable = true;
@@ -337,12 +296,12 @@ public class GameManager : MonoBehaviour
         if (redos.Count > 0)
         {
             string redo = redos.Pop();
-            thomas.PlayMoveAlgebraic(redo);
-            allCandidates = new HashSet<string>(thomas.GetLegalMovesAlgebraic());
+            thomas.PlayPGN(redo);
+            allCandidates = new HashSet<string>(thomas.GetPGNs());
             candidate = sequence==null || redos.Count==0? "" : null;
 
             undos.Push(redo);
-            DisplayPieces();
+            board.SetFEN(thomas.ToFEN());
             ShowPossibleChars();
         }
         redoButton.interactable = redos.Count > 0;
@@ -376,69 +335,40 @@ public class GameManager : MonoBehaviour
     }
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.LeftArrow)) UndoMove();
-        else if (Input.GetKeyDown(KeyCode.RightArrow)) RedoMove();
-        else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-        {
-            if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
-            else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
-            else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
-            else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
-            else if (Input.GetKeyDown(KeyCode.K) && K.interactable) InputChar('K');
-            else if (Input.GetKeyDown(KeyCode.Comma) && O_O_O.interactable) InputChar('<');
-            else if (Input.GetKeyDown(KeyCode.Period) && O_O.interactable) InputChar('>');
-        }
-        else if (Input.GetKeyDown(KeyCode.Backspace)) UndoChar();
-        else if (Input.GetKeyDown(KeyCode.X) && x.interactable) InputChar('x');
-        else if (Input.GetKeyDown(KeyCode.Equals) && eq.interactable) InputChar('=');
+        // if (Input.GetKeyDown(KeyCode.LeftArrow)) UndoMove();
+        // else if (Input.GetKeyDown(KeyCode.RightArrow)) RedoMove();
+        // else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        // {
+        //     if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
+        //     else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
+        //     else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
+        //     else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
+        //     else if (Input.GetKeyDown(KeyCode.K) && K.interactable) InputChar('K');
+        //     else if (Input.GetKeyDown(KeyCode.Comma) && O_O_O.interactable) InputChar('<');
+        //     else if (Input.GetKeyDown(KeyCode.Period) && O_O.interactable) InputChar('>');
+        // }
+        // else if (Input.GetKeyDown(KeyCode.Backspace)) UndoChar();
+        // else if (Input.GetKeyDown(KeyCode.X) && x.interactable) InputChar('x');
+        // else if (Input.GetKeyDown(KeyCode.Equals) && eq.interactable) InputChar('=');
 
-        else if (Input.GetKeyDown(KeyCode.A) && files[0].interactable) InputChar('a');
-        else if (Input.GetKeyDown(KeyCode.B) && files[1].interactable) InputChar('b');
-        else if (Input.GetKeyDown(KeyCode.C) && files[2].interactable) InputChar('c');
-        else if (Input.GetKeyDown(KeyCode.D) && files[3].interactable) InputChar('d');
-        else if (Input.GetKeyDown(KeyCode.E) && files[4].interactable) InputChar('e');
-        else if (Input.GetKeyDown(KeyCode.F) && files[5].interactable) InputChar('f');
-        else if (Input.GetKeyDown(KeyCode.G) && files[6].interactable) InputChar('g');
-        else if (Input.GetKeyDown(KeyCode.H) && files[7].interactable) InputChar('h');
+        // else if (Input.GetKeyDown(KeyCode.A) && files[0].interactable) InputChar('a');
+        // else if (Input.GetKeyDown(KeyCode.B) && files[1].interactable) InputChar('b');
+        // else if (Input.GetKeyDown(KeyCode.C) && files[2].interactable) InputChar('c');
+        // else if (Input.GetKeyDown(KeyCode.D) && files[3].interactable) InputChar('d');
+        // else if (Input.GetKeyDown(KeyCode.E) && files[4].interactable) InputChar('e');
+        // else if (Input.GetKeyDown(KeyCode.F) && files[5].interactable) InputChar('f');
+        // else if (Input.GetKeyDown(KeyCode.G) && files[6].interactable) InputChar('g');
+        // else if (Input.GetKeyDown(KeyCode.H) && files[7].interactable) InputChar('h');
 
-        else if (Input.GetKeyDown(KeyCode.Alpha1) && ranks[0].interactable) InputChar('1');
-        else if (Input.GetKeyDown(KeyCode.Alpha2) && ranks[1].interactable) InputChar('2');
-        else if (Input.GetKeyDown(KeyCode.Alpha3) && ranks[2].interactable) InputChar('3');
-        else if (Input.GetKeyDown(KeyCode.Alpha4) && ranks[3].interactable) InputChar('4');
-        else if (Input.GetKeyDown(KeyCode.Alpha5) && ranks[4].interactable) InputChar('5');
-        else if (Input.GetKeyDown(KeyCode.Alpha6) && ranks[5].interactable) InputChar('6');
-        else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
-        else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
+        // else if (Input.GetKeyDown(KeyCode.Alpha1) && ranks[0].interactable) InputChar('1');
+        // else if (Input.GetKeyDown(KeyCode.Alpha2) && ranks[1].interactable) InputChar('2');
+        // else if (Input.GetKeyDown(KeyCode.Alpha3) && ranks[2].interactable) InputChar('3');
+        // else if (Input.GetKeyDown(KeyCode.Alpha4) && ranks[3].interactable) InputChar('4');
+        // else if (Input.GetKeyDown(KeyCode.Alpha5) && ranks[4].interactable) InputChar('5');
+        // else if (Input.GetKeyDown(KeyCode.Alpha6) && ranks[5].interactable) InputChar('6');
+        // else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
+        // else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
         // TODO: make the above work for different numbers of ranks and files
     }
 
-    void ClearBoard()
-    {
-        foreach (Text square in squares)
-        {
-            square.text = "";
-        }
-    }
-    void DisplayPiece(int position, string letter, Color colour)
-    {
-        squares[position].color = colour;
-        squares[position].text = letter;
-    }
-    void DisplayPieces()
-    {
-        // TODO: animations
-        ClearBoard();
-        for (int i=0; i<squares.Count; i++)
-        {
-            string piece = thomas.PieceOnSquare(i, true);
-            if (piece != null)
-                DisplayPiece(i, piece, Color.white);
-            else
-            {
-                piece = thomas.PieceOnSquare(i, false);
-                if (piece != null)
-                    DisplayPiece(i, piece, Color.black);
-            }
-        }
-    }
 }

@@ -12,6 +12,78 @@ using System.Text.RegularExpressions;
 public class Menu : MonoBehaviour
 {
     [SerializeField] GameManager gm;
+
+    public void StartFullGame()
+    {
+        // "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
+        // "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - "
+        // "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"
+        // "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0"
+        gm.StartFullGame();
+    }
+    public void StartPeasantsRevolt()
+    {
+        // "1nn1knn1/4p3/8/8/8/8/PPPPPPPP/4K3 w - -"
+    }
+    public void StartHordeChess()
+    {
+        // "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w KQ -"
+    }
+    public void StartDoubleChess()
+    {
+        // fuck this and fuck castling
+        // "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w KQkq - 0 1"
+    }
+    public void StartChess960()
+    {
+        // Platonic solids method
+        int tetra = UnityEngine.Random.Range(0, 4);
+        int cube = UnityEngine.Random.Range(0, 6);
+        int octa = UnityEngine.Random.Range(0, 8);
+        // int dodeca = UnityEngine.Random.Range(0, 12);
+        int ico = UnityEngine.Random.Range(0, 20);
+
+        var sb = new StringBuilder("xxxxxxxx");
+        sb[octa] = 'b';
+        sb[2*tetra + ((octa+1)%2)] = 'b';
+        sb[XthEmptySquare960(cube, sb)] = 'q';
+        sb[XthEmptySquare960(ico/4, sb)] = 'n';
+        sb[XthEmptySquare960(ico%4, sb)] = 'n';
+        sb[XthEmptySquare960(0, sb)] = 'r';
+        sb[XthEmptySquare960(0, sb)] = 'k';
+        sb[XthEmptySquare960(0, sb)] = 'r';
+
+        sb.Append("/pppppppp/8/8/8/8/PPPPPPPP/");
+        sb.Append(sb.ToString(0,8).ToUpper());
+        print(sb.ToString());
+    }
+    private int XthEmptySquare960(int x, StringBuilder sb)
+    {
+        for (int i=0; i<8; i++)
+        {
+            if (sb[i] == 'x')
+            {
+                if (x == 0)
+                    return i;
+                else
+                    x -= 1;
+            }
+        }
+        throw new Exception("not enough empty squares remaining");
+    }
+    public void StartMicroChess()
+    {
+        // "knbr/p3/4/3P/RBNK w Qk -"
+    }
+    public void StartDemiChess()
+    {
+        // "kbnr/pppp/4/4/4/4/pppp/KBNR w KK -"
+    }
+    public void StartBabyChess()
+    {
+        // "kqbnr/ppppp/5/PPPPP/RNBQK w 
+    }
+
     [SerializeField] TextAsset m8n2, m8n3, m8n4, quotes;
     [SerializeField] Font chosenFont; // TODO: choices and textmeshpro
     [Serializable] public class Puzzle
@@ -164,16 +236,6 @@ public class Menu : MonoBehaviour
             print(e);
         }
     }
-    public void StartFullGame()
-    {
-        // "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
-        // "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - "
-        // "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"
-        // "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0"
-        // "knbr/p3/4/3P/RBNK w Qk -"
-        // "kbnr/pppp/4/4/4/4/pppp/KBNR w KK -"
-        gm.StartFullGame();
-    }
     public void RandomPuzzle2()
     {
         StartPuzzle(puzzles2);
@@ -214,7 +276,6 @@ public class Menu : MonoBehaviour
             throw new Exception("could not choose puzzle");
 
         gm.SetTitle(chosenPuzzle.name);
-        gm.SetFont(chosenFont);
         gm.StartPuzzle(chosenPuzzle.FEN, chosenPuzzle.PGN,
                        ()=>{ chosenPuzzle.solved = true; SaveAllPuzzles(); ShowAllProgress(); });
         ChooseQuote();

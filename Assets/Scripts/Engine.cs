@@ -11,8 +11,8 @@ public partial class Engine
     private enum Piece { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
                          VirginPawn, VirginRook, VirginKing }; // for castling, en passant etc.
 
-    private Dictionary<int, Piece> whitePieces = new Dictionary<int, Piece>();
-    private Dictionary<int, Piece> blackPieces = new Dictionary<int, Piece>();
+    private List<Piece> whitePieces = new List<Piece>();
+    private List<Piece> blackPieces = new List<Piece>();
 
     public int NRanks { get; private set; } = 8;
     public int NFiles { get; private set; } = 8;
@@ -24,7 +24,7 @@ public partial class Engine
     // a Move plus the board state is all the info needed for move generation
     private class Move
     {
-        public enum Special { None=0, Normal, Castle, EnPassant };
+        public enum Special { None=0, Normal, Castle, Puush, EnPassant };
 
         public Move previous = null;
         public bool whiteMove = false;
@@ -34,12 +34,12 @@ public partial class Engine
         public Piece moved = Piece.None;
         public Piece captured = Piece.None;
         public Piece promotion = Piece.None;
+        public int halfMoveClock = 0;
     }
 
     // current to evaluate
     private Move prevMove;
-    // TODO: private int halfMoveClock;
-    private Dictionary<string, Move> legalMoves;
+    private int moveCount;
 
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
                   int leftCastledFile=2, int rightCastledFile=6,
@@ -96,13 +96,13 @@ public partial class Engine
         }
         prevMove = new Move();
 
-        // 
+        // who to move
         i += 1;
         if (FEN[i] == 'w') prevMove.whiteMove = false;
         else if (FEN[i] == 'b') prevMove.whiteMove = true;
         else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-        // castling
+        // castling I HATE YOU
         i += 2;
         bool K,Q,k,q;
         K=Q=k=q=false;
@@ -117,7 +117,7 @@ public partial class Engine
 
             i += 1;
         }
-        foreach (int pos in whitePieces.Keys.ToList())
+        foreach (int pos in whitePieces)
         {
             if (whitePieces[pos] == Piece.Rook)
             {
@@ -128,7 +128,7 @@ public partial class Engine
                     whitePieces[pos] = Piece.VirginRook;
             }
         }
-        foreach (int pos in blackPieces.Keys.ToList())
+        foreach (int pos in blackPieces)
         {
             if (blackPieces[pos] == Piece.Rook)
             {
@@ -155,8 +155,6 @@ public partial class Engine
             }
         }
 
-        // TODO: draw counter
-
         LeftCastledFile = leftCastledFile;
         RightCastledFile = rightCastledFile;
 
@@ -176,39 +174,125 @@ public partial class Engine
         return file>=0 && file<NFiles && rank>=0 && rank<NRanks;
     }
     public bool Occupied(int pos) {
-        return whitePieces.ContainsKey(pos) || blackPieces.ContainsKey(pos);
+        // return whitePieces.ContainsKey(pos) || blackPieces.ContainsKey(pos);
+        return whitePieces[pos] != Piece.None || blackPieces[pos] != Piece.None;
     }
 
 
     ///////////////////////////////////
     // for interface from the outside
 
-    private static Dictionary<Piece, string> pieceStrings = new Dictionary<Piece, string>() {
-        { Piece.Pawn, "♟" },
-        { Piece.VirginPawn, "♟" },
-        { Piece.Rook, "♜" },
-        { Piece.VirginRook, "♜" },
-        { Piece.Knight, "♞" },
-        { Piece.Bishop, "♝" },
-        { Piece.Queen, "♛" },
-        { Piece.King, "♚" },
-        { Piece.VirginKing, "♚" },
-    };
-    public string PieceOnSquare(int pos, bool white)
+    private Dictionary<string, Move> legalMoves;
+    public void PlayPGN(string algebraic)
     {
-        Piece p;
-        if (white && whitePieces.TryGetValue(pos, out p))
+        Move toPlay;
+        if (legalMoves.TryGetValue(algebraic, out toPlay))
         {
-            return pieceStrings[p];
+            PlayMove(toPlay);
+            prevMove = toPlay;
+            legalMoves = FindLegalMoves(prevMove);
+            moveCount += 1;
         }
-        else if (!white && blackPieces.TryGetValue(pos, out p))
+        else
         {
-            return pieceStrings[p];
+            throw new Exception("move not legal");
         }
-        return null;
+    }
+    public IEnumerable<string> GetPGNs()
+    {
+        return legalMoves.Keys;
+    }
+    public void UndoLastMove()
+    {
+        if (prevMove != null)
+        {
+            UndoMove(prevMove);
+            prevMove = prevMove.previous;
+            legalMoves = FindLegalMoves(prevMove);
+            moveCount -= 1;
+        }
+        else
+        {
+            throw new Exception("no moves played yet");
+        }
     }
 
-    private string Algebraic(Move move)
+    private static Dictionary<Piece, string> pieceStrings = new Dictionary<Piece, string>() {
+        { Piece.Pawn, "p" },
+        { Piece.VirginPawn, "p" },
+        { Piece.Rook, "r" },
+        { Piece.VirginRook, "r" },
+        { Piece.Knight, "n" },
+        { Piece.Bishop, "b" },
+        { Piece.Queen, "q" },
+        { Piece.King, "k" },
+        { Piece.VirginKing, "k" },
+    };
+
+    public string ToFEN()
+    {
+        var sb = new StringBuilder();
+
+        int empty = 0;
+        for (int pos=0; pos<whitePieces.Count; pos++)
+        {
+            if (pos > 0 && pos%NFiles == 0)
+            {
+                if (empty > 0)
+                {
+                    sb.Append(empty);
+                    empty = 0;
+                }
+                sb.Append('/');
+            }
+            if (whitePieces[pos] == Piece.None && blackPieces[pos] == Piece.None)
+            {
+                empty += 1;
+            }
+            else
+            {
+                if (empty > 0)
+                {
+                    sb.Append(empty);
+                    empty = 0;
+                }
+                if (whitePieces[pos] != Piece.None && blackPieces[pos] != Piece.None)
+                {
+                    throw new Exception("white and black on same square boo");
+                }
+                else if (whitePieces[pos] != Piece.None)
+                {
+                    sb.Append(pieceStrings[whitePieces[pos]].ToUpper());
+                }
+                else // if (blackPieces[pos] != Piece.None)
+                {
+                    sb.Append(pieceStrings[blackPieces[pos]]);
+                }
+            }
+        }
+
+        // who to move
+        sb.Append(' ').Append(moveCount%2==0? 'w' : 'b');
+
+        // castling
+        sb.Append("FUCKTHISGAME");
+
+        // en passant
+        if (prevMove.type == Move.Special.Puush)
+            sb.Append(' ').Append('a' + GetFile(prevMove.target)).Append(GetRank(prevMove.target));
+        else
+            sb.Append(' ').Append("-");
+
+        // half move clock
+        sb.Append(' ').Append(prevMove.halfMoveClock);
+
+        // full move clock
+        sb.Append(' ').Append(moveCount/2 + 1);
+
+        return sb.ToString();
+    }
+
+    private string ToPGN(Move move)
     {
         var sb = new StringBuilder();
         if (move.type == Move.Special.Castle)
@@ -228,23 +312,14 @@ public partial class Engine
                 && move.promotion != Piece.Pawn)
             {
                 sb.Append('=');
-                if (move.promotion == Piece.Rook) sb.Append('R');
-                else if (move.promotion == Piece.Knight) sb.Append('N');
-                else if (move.promotion == Piece.Bishop) sb.Append('B');
-                else if (move.promotion == Piece.Queen) sb.Append('Q');
+                sb.Append(pieceStrings[move.promotion]);
             }
         }
         else
         {
-            if (move.moved == Piece.Rook
-                || move.moved == Piece.VirginRook) sb.Append('R');
-            else if (move.moved == Piece.Knight) sb.Append('N');
-            else if (move.moved == Piece.Bishop) sb.Append('B');
-            else if (move.moved == Piece.Queen) sb.Append('Q');
-            else if (move.moved == Piece.King
-                     || move.moved == Piece.VirginKing) sb.Append('K');
-
-            if (move.captured != Piece.None) sb.Append('x');
+            sb.Append(pieceStrings[move.moved]);
+            if (move.captured != Piece.None)
+                sb.Append('x');
 
             sb.Append((char)('a'+(move.target%NFiles)));
             sb.Append(move.target/NFiles + 1);
@@ -267,7 +342,7 @@ public partial class Engine
             // if legal, add to list
             if (!InCheck(next, nextnexts))
             {
-                string algebraic = Algebraic(next);
+                string algebraic = ToPGN(next);
                 if (ambiguous.ContainsKey(algebraic))
                 {
                     ambiguous[algebraic].Add(next);
@@ -322,35 +397,5 @@ public partial class Engine
         }
         return unambiguous;
     }
-    public void PlayMoveAlgebraic(string algebraic)
-    {
-        Move toPlay;
-        if (legalMoves.TryGetValue(algebraic, out toPlay))
-        {
-            PlayMove(toPlay);
-            prevMove = toPlay;
-            legalMoves = FindLegalMoves(prevMove);
-        }
-        else
-        {
-            throw new Exception("move not legal");
-        }
-    }
-    public IEnumerable<string> GetLegalMovesAlgebraic()
-    {
-        return legalMoves.Keys;
-    }
-    public void UndoLastMove()
-    {
-        if (prevMove != null)
-        {
-            UndoMove(prevMove);
-            prevMove = prevMove.previous;
-            legalMoves = FindLegalMoves(prevMove);
-        }
-        else
-        {
-            throw new Exception("no moves played yet");
-        }
-    }
+
 }

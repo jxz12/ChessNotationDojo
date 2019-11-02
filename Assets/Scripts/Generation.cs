@@ -25,8 +25,8 @@ public partial class Engine
 
         // capture
         if (InBounds(targetRank, targetFile) &&
-            (whiteToMove? blackPieces.ContainsKey(targetPos)
-                        : whitePieces.ContainsKey(targetPos)))
+            (whiteToMove? blackPieces[targetPos] != Piece.None
+                        : whitePieces[targetPos] != Piece.None))
         {
             yield return targetPos;
         }
@@ -50,7 +50,7 @@ public partial class Engine
         return       BishopAttacks(queen, whiteToMove)
                .Concat(RookAttacks(queen, whiteToMove));
     }
-    // for candidate knight, king, pawn moves
+    // for candidate knight, king, pawn moves FIXME: horrendously slow, and use for pawns
     private IEnumerable<int> HopAttack(int hopper, int fileHop, int rankHop, bool whiteToMove)
     {
         int startFile = GetFile(hopper);
@@ -60,8 +60,8 @@ public partial class Engine
         int targetPos = GetPos(targetRank, targetFile);
 
         if (InBounds(targetRank, targetFile) &&
-            (whiteToMove? !whitePieces.ContainsKey(targetPos)
-                        : !blackPieces.ContainsKey(targetPos)))
+            (whiteToMove? blackPieces[targetPos] != Piece.None
+                        : whitePieces[targetPos] != Piece.None))
             // only blocked by own pieces
         {
             yield return targetPos;
@@ -105,9 +105,7 @@ public partial class Engine
         {
             if (Occupied(targetPos))
             {
-                Piece ally;
-                if (allies.TryGetValue(targetPos, out ally)
-                    && ally==Piece.VirginRook)
+                if (allies[targetPos] == Piece.VirginRook)
                 {
                     return targetPos;
                 }
@@ -156,12 +154,12 @@ public partial class Engine
         
         var allies = whiteRook? whitePieces : blackPieces;
         int hop = 1;
-        Piece kingCheck;
         while (rank-hop >= 0 && rank+hop < NFiles)
         {
-            if (allies.TryGetValue(rook-hop, out kingCheck) && kingCheck == Piece.King)
+            // Piece kingCheck;
+            if (allies[rook-hop] == Piece.VirginKing)
                 return true;
-            if (allies.TryGetValue(rook+hop, out kingCheck) && kingCheck == Piece.King)
+            if (allies[rook+hop] == Piece.VirginKing)
                 return false;
 
             hop += 1;
@@ -180,7 +178,7 @@ public partial class Engine
         int forward = whiteToMove? NFiles : -NFiles;
 
         // go through each piece and generate moves
-        foreach (int pos in allies.Keys)
+        for (int pos=0; pos<=allies.Count; pos++)
         {
             int rank = GetRank(pos);
             int file = GetFile(pos);
@@ -224,9 +222,8 @@ public partial class Engine
                 if (file > 0) // left
                 {
                     int attack = pos+forward - 1;
-                    Piece capture;
                     // pawns cannot move to an attacked square unless it's a capture
-                    if (enemies.TryGetValue(attack, out capture))
+                    if (enemies[attack] != Piece.None)
                     {
                         var pish = new Move() {
                             whiteMove = whiteToMove,
@@ -234,7 +231,7 @@ public partial class Engine
                             target = attack,
                             type = Move.Special.Normal,
                             moved = allies[pos],
-                            captured = capture,
+                            captured = enemies[attack],
                             promotion = Piece.Pawn,
                             previous = current
                         };
@@ -253,9 +250,8 @@ public partial class Engine
                 if (file < NFiles-1) // right
                 {
                     int attack = pos+forward + 1;
-                    Piece capture;
                     // pawns cannot move to an attacked square unless it's a capture
-                    if (enemies.TryGetValue(attack, out capture))
+                    if (enemies[attack] != Piece.None)
                     {
                         var pish = new Move() {
                             whiteMove = whiteToMove,
@@ -263,7 +259,7 @@ public partial class Engine
                             target = attack,
                             type = Move.Special.Normal,
                             moved = allies[pos],
-                            captured = capture,
+                            captured = enemies[attack],
                             promotion = Piece.Pawn,
                             previous = current
                         };
@@ -301,15 +297,13 @@ public partial class Engine
             {
                 foreach (int attack in KnightAttacks(pos, whiteToMove))
                 {
-                    Piece capture;
-                    enemies.TryGetValue(attack, out capture);
                     yield return new Move() {
                         whiteMove = whiteToMove,
                         source = pos,
                         target = attack,
                         type = Move.Special.Normal,
                         moved = Piece.Knight,
-                        captured = capture,
+                        captured = enemies[attack],
                         previous = current
                     };
                 }
@@ -318,15 +312,13 @@ public partial class Engine
             {
                 foreach (int attack in BishopAttacks(pos, whiteToMove))
                 {
-                    Piece capture;
-                    enemies.TryGetValue(attack, out capture);
                     yield return new Move() {
                         whiteMove = whiteToMove,
                         source = pos,
                         target = attack,
                         type = Move.Special.Normal,
                         moved = Piece.Bishop,
-                        captured = capture,
+                        captured = enemies[attack],
                         previous = current
                     };
                 }
@@ -335,15 +327,13 @@ public partial class Engine
             {
                 foreach (int attack in RookAttacks(pos, whiteToMove))
                 {
-                    Piece capture;
-                    enemies.TryGetValue(attack, out capture);
                     yield return new Move() {
                         whiteMove = whiteToMove,
                         source = pos,
                         target = attack,
                         type = Move.Special.Normal,
                         moved = allies[pos],
-                        captured = capture,
+                        captured = enemies[attack],
                         promotion = Piece.Rook,
                         previous = current
                     };
@@ -353,15 +343,13 @@ public partial class Engine
             {
                 foreach (int attack in QueenAttacks(pos, whiteToMove))
                 {
-                    Piece capture;
-                    enemies.TryGetValue(attack, out capture);
                     yield return new Move() {
                         whiteMove = whiteToMove,
                         source = pos,
                         target = attack,
                         type = Move.Special.Normal,
                         moved = Piece.Queen,
-                        captured = capture,
+                        captured = enemies[attack],
                         previous = current
                     };
                 }
@@ -370,15 +358,13 @@ public partial class Engine
             {
                 foreach (int attack in KingAttacks(pos, whiteToMove))
                 {
-                    Piece capture;
-                    enemies.TryGetValue(attack, out capture);
                     yield return new Move() {
                         whiteMove = whiteToMove,
                         source = pos,
                         target = attack,
                         type = Move.Special.Normal,
                         moved = allies[pos],
-                        captured = capture,
+                        captured = enemies[attack],
                         promotion = Piece.King,
                         previous = current
                     };
@@ -505,10 +491,10 @@ public partial class Engine
         }
         return false;
     }
-    public bool Check()
-    {
-        return IsCheck(prevMove);
-    }
+    // public bool Check()
+    // {
+    //     return IsCheck(prevMove);
+    // }
     public int NumPieces(bool white)
     {
         if (white)
@@ -525,11 +511,11 @@ public partial class Engine
 
         if (white)
         {
-            whitePieces.Add(pos, type);
+            whitePieces[pos] = type;
         }
         else
         {
-            blackPieces.Add(pos, type);
+            blackPieces[pos] = type;
         }
     }
     private void RemovePiece(Piece type, int pos, bool white)
@@ -540,11 +526,11 @@ public partial class Engine
 
         if (white)
         {
-            whitePieces.Remove(pos);
+            whitePieces[pos] = Piece.None;
         }
         else
         {
-            blackPieces.Remove(pos);
+            blackPieces[pos] = Piece.None;
         }
     }
 

@@ -9,7 +9,7 @@ public partial class Engine
         captures = EPs = castles = promos = checks = 0;
         int nodes = Perft(prevMove, ply);
 
-        UnityEngine.Debug.Log(captures + " " + EPs + " " + castles + " " + promos + " " + checks);
+        // UnityEngine.Debug.Log(captures + " " + EPs + " " + castles + " " + promos + " " + checks);
         return nodes;
     }
     private int Perft(Move current, int ply)
@@ -49,6 +49,7 @@ public partial class Engine
         }
     }
     private static Dictionary<Piece, int> pieceValues = new Dictionary<Piece, int>() {
+        { Piece.None, 0 },
         { Piece.VirginPawn, 1 },
         { Piece.Pawn, 1 },
         { Piece.VirginRook, 5 },
@@ -62,19 +63,19 @@ public partial class Engine
     private int Evaluate(Move current)
     {
         int total = 0;
-        foreach (Piece p in whitePieces.Values) total += pieceValues[p];
-        foreach (Piece p in blackPieces.Values) total -= pieceValues[p];
+        foreach (Piece p in whitePieces) total += pieceValues[p];
+        foreach (Piece p in blackPieces) total -= pieceValues[p];
         return total;
     }
 
     // returns best move algebraic and evaluation
-    public Tuple<string, float> EvaluateBestMove(int ply)
+    public Tuple<string, int> EvaluateBestMove(int ply)
     {
-        float bestEval = float.MinValue;
+        int bestEval = -999;
         string bestAlgebraic = null;
         foreach (string algebraic in legalMoves.Keys)
         {
-            float eval = NegaMax(legalMoves[algebraic], ply, int.MinValue, int.MaxValue, prevMove.whiteMove?-1:1);
+            int eval = NegaMax(legalMoves[algebraic], ply, -999, 999, prevMove.whiteMove?-1:1);
             if (eval > bestEval) // TODO: random choice
             {
                 bestEval = eval;
@@ -86,27 +87,17 @@ public partial class Engine
     private int NegaMax(Move current, int ply, int alpha, int beta, int colour)
     {
         if (current.type == Move.Special.None) // TODO: so ugly...
-            return int.MinValue;
+            return -999;
 
         PlayMove(current);
         var nexts = new List<Move>(FindPseudoLegalMoves(current));
         if (InCheck(current, nexts)) // moving into check
         {
             UndoMove(current);
-            return int.MinValue;
+            return -999;
         }
         else
         {
-            // if (IsCheck(current)) // TODO: terminal nodes
-            // {
-            //     UndoMove(current);
-            //     return int.MaxValue;
-            // }
-            // else
-            // {
-            //     UndoMove(current);
-            //     return 0;
-            // }
             if (ply == 0)
             {
                 UndoMove(current);
@@ -114,7 +105,7 @@ public partial class Engine
             }
             else
             {
-                int eval = int.MinValue;
+                int eval = -999;
                 foreach (Move next in nexts)
                 {
                     eval = Math.Max(eval, -NegaMax(next, ply-1, -beta, -alpha, -colour));
@@ -122,6 +113,7 @@ public partial class Engine
                     if (alpha >= beta)
                         break; // cut-off
                 }
+                // TODO: checkmate checks here probably
                 UndoMove(current);
                 return eval;
             }
