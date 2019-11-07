@@ -15,10 +15,10 @@ public class Menu : MonoBehaviour
 
     public void StartFullGame()
     {
-        // "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
+        // "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w AHah -"
         // "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - "
-        // "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1"
-        // "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0"
+        // "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w ah - 0 1"
+        // "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w AHah - 1 0"
         gm.StartFullGame();
     }
     public void StartPeasantsRevolt()
@@ -27,12 +27,13 @@ public class Menu : MonoBehaviour
     }
     public void StartHordeChess()
     {
-        // "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w KQ -"
+        // "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w AH -"
+        // no puush
     }
     public void StartDoubleChess()
     {
-        // fuck this and fuck castling
-        // "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w KQkq - 0 1"
+        throw new Exception("fuck this and fuck castling");
+        // "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w AHGPahgp - 0 1"
     }
     public void StartChess960()
     {
@@ -49,13 +50,22 @@ public class Menu : MonoBehaviour
         sb[XthEmptySquare960(cube, sb)] = 'q';
         sb[XthEmptySquare960(ico/4, sb)] = 'n';
         sb[XthEmptySquare960(ico%4, sb)] = 'n';
-        sb[XthEmptySquare960(0, sb)] = 'r';
-        sb[XthEmptySquare960(0, sb)] = 'k';
-        sb[XthEmptySquare960(0, sb)] = 'r';
+        int leftRook = XthEmptySquare960(0, sb);
+        sb[leftRook] = 'r';
+        int king = XthEmptySquare960(0, sb);
+        sb[king] = 'k';
+        int rightRook = XthEmptySquare960(0, sb);
+        sb[rightRook] = 'r';
 
         sb.Append("/pppppppp/8/8/8/8/PPPPPPPP/");
         sb.Append(sb.ToString(0,8).ToUpper());
-        print(sb.ToString());
+        sb.Append(" w ")
+          .Append((char)('A'+leftRook))
+          .Append((char)('A'+rightRook))
+          .Append((char)('a'+leftRook))
+          .Append((char)('a'+rightRook))
+          .Append(" -");
+        FindObjectOfType<BoardAscii>().SetFEN(sb.ToString());
     }
     private int XthEmptySquare960(int x, StringBuilder sb)
     {
@@ -96,12 +106,12 @@ public class Menu : MonoBehaviour
     List<Puzzle> puzzles2, puzzles3, puzzles4;
     void Awake()
     {
-        puzzles2 = InitPuzzles(m8n2.text, Application.persistentDataPath+"/m8n2.gd");
-        puzzles3 = InitPuzzles(m8n3.text, Application.persistentDataPath+"/m8n3.gd");
-        puzzles4 = InitPuzzles(m8n4.text, Application.persistentDataPath+"/m8n4.gd");
-        ShowAllProgress();
+        // puzzles2 = InitPuzzles(m8n2.text, Application.persistentDataPath+"/m8n2.gd");
+        // puzzles3 = InitPuzzles(m8n3.text, Application.persistentDataPath+"/m8n3.gd");
+        // puzzles4 = InitPuzzles(m8n4.text, Application.persistentDataPath+"/m8n4.gd");
+        // ShowAllProgress();
 
-        quotesList = LoadQuotes(quotes.text);
+        // quotesList = LoadQuotes(quotes.text);
     }
 
     List<Puzzle> InitPuzzles(string input, string path)

@@ -200,7 +200,7 @@ public partial class Engine
                     foreach (Move m in PromotionsIfPossible(push))
                         yield return m;
                     
-                    // puush
+                    // puush TODO: change into up to half way! (for double chess)
                     if (allies[pos] == Piece.VirginPawn &&
                         !Occupied(pos+2*forward))
                     {

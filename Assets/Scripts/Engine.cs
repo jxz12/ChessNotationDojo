@@ -13,6 +13,7 @@ public partial class Engine
 
     private List<Piece> whitePieces = new List<Piece>();
     private List<Piece> blackPieces = new List<Piece>();
+    private Dictionary<king, castlable rooks> TODO
 
     public int NRanks { get; private set; } = 8;
     public int NFiles { get; private set; } = 8;
@@ -41,21 +42,15 @@ public partial class Engine
     private Move prevMove;
     private int moveCount;
 
-    public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-                  int leftCastledFile=2, int rightCastledFile=6,
-                  bool whitePuush=true, bool blackPuush=true)
+    public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1",
+                  int leftCastledFile=2, int rightCastledFile=6, // TODO: change into array
+                  bool puush=true)
     {
         // board = new Board();
         NRanks = FEN.Count(c=>c=='/') + 1;
-        NFiles = 0;
-        foreach (char c in FEN) // count files in first rank
-        {
-            if (c == '/') break;
-            else if (c > '0' && c <= '9') NFiles += c-'0';
-            else NFiles += 1;
-        }
-        if (NFiles > 26 || NRanks > 9)
-            throw new Exception("cannot have more than 26x9 board (blame ASCII lol)");
+        NFiles = FEN.IndexOf('/');
+        if (NFiles > 26 || NRanks > 16)
+            throw new Exception("cannot have more than 26x16 board (blame ASCII lol)");
 
         int rank = NRanks-1;
         int file = -1;
@@ -76,14 +71,14 @@ public partial class Engine
             {
                 file += FEN[i] - '1'; // -1 because file will be incremented regardless
             }
-            else if (FEN[i] == 'P') whitePieces[pos] = (whitePuush && GetRank(pos)==1)
+            else if (FEN[i] == 'P') whitePieces[pos] = (puush && GetRank(pos)==1)
                                                        ? Piece.VirginPawn : Piece.Pawn;
             else if (FEN[i] == 'R') whitePieces[pos] = Piece.Rook;
             else if (FEN[i] == 'N') whitePieces[pos] = Piece.Knight;
             else if (FEN[i] == 'B') whitePieces[pos] = Piece.Bishop;
             else if (FEN[i] == 'Q') whitePieces[pos] = Piece.Queen;
             else if (FEN[i] == 'K') whitePieces[pos] = Piece.VirginKing;
-            else if (FEN[i] == 'p') blackPieces[pos] = (blackPuush && GetRank(pos)==NRanks-2)
+            else if (FEN[i] == 'p') blackPieces[pos] = (puush && GetRank(pos)==NRanks-2)
                                                        ? Piece.VirginPawn : Piece.Pawn;
             else if (FEN[i] == 'r') blackPieces[pos] = Piece.Rook;
             else if (FEN[i] == 'n') blackPieces[pos] = Piece.Knight;
@@ -94,7 +89,6 @@ public partial class Engine
 
             i += 1;
         }
-        prevMove = new Move();
 
         // who to move
         i += 1;
@@ -102,7 +96,7 @@ public partial class Engine
         else if (FEN[i] == 'b') prevMove.whiteMove = true;
         else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-        // castling I HATE YOU
+        // castling I HATE YOU TODO: shredder FEN, only make one of the rooks virgins
         i += 2;
         bool K,Q,k,q;
         K=Q=k=q=false;
@@ -154,6 +148,9 @@ public partial class Engine
                 prevMove.target = prevMove.whiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
             }
         }
+        // TODO: half and full move clocks
+        prevMove = new Move();
+        // TODO: UCI extended notation
 
         LeftCastledFile = leftCastledFile;
         RightCastledFile = rightCastledFile;
@@ -274,7 +271,7 @@ public partial class Engine
         // who to move
         sb.Append(' ').Append(moveCount%2==0? 'w' : 'b');
 
-        // castling
+        // castling TODO: use shredder fen for this
         sb.Append("FUCKTHISGAME");
 
         // en passant
@@ -297,6 +294,7 @@ public partial class Engine
         var sb = new StringBuilder();
         if (move.type == Move.Special.Castle)
         {
+            // TODO: change this into Ka1 or Kh1 (drop king on rook)
             if (move.target > move.source) sb.Append('>');
             else sb.Append('<');
         }
