@@ -11,9 +11,9 @@ public partial class Engine
     private enum Piece { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
                          VirginPawn, VirginRook, VirginKing }; // for castling, en passant etc.
 
-    private List<Piece> whitePieces = new List<Piece>();
-    private List<Piece> blackPieces = new List<Piece>();
-    private Dictionary<int, int> castles = new Dictionary<int, int>();
+    private List<Piece> whitePieces;
+    private List<Piece> blackPieces;
+    // private Dictionary<int, int> castles; // FIXME:
 
     public int NRanks { get; private set; } = 8;
     public int NFiles { get; private set; } = 8;
@@ -57,6 +57,14 @@ public partial class Engine
         if (NFiles > 26 || NRanks > 16)
             throw new Exception("cannot have more than 26x16 board (blame ASCII lol)");
 
+        whitePieces = new List<Piece>(NRanks*NFiles);
+        blackPieces = new List<Piece>(NRanks*NFiles);
+        for (int pos=0; pos<NRanks*NFiles; pos++)
+        {
+            whitePieces.Add(Piece.None);
+            blackPieces.Add(Piece.None);
+        }
+
         int rank = NRanks-1;
         int file = -1;
         int i = 0;
@@ -83,6 +91,7 @@ public partial class Engine
             else if (FEN[i] == 'B') whitePieces[pos] = Piece.Bishop;
             else if (FEN[i] == 'Q') whitePieces[pos] = Piece.Queen;
             else if (FEN[i] == 'K') whitePieces[pos] = Piece.VirginKing;
+
             else if (FEN[i] == 'p') blackPieces[pos] = GetRank(pos)==NRanks-2?
                                                        Piece.VirginPawn:Piece.Pawn;
             else if (FEN[i] == 'r') blackPieces[pos] = Piece.Rook;
@@ -96,6 +105,7 @@ public partial class Engine
         }
 
         // who to move
+        prevMove = new Move();
         i += 1;
         if (FEN[i] == 'w') prevMove.whiteMove = false;
         else if (FEN[i] == 'b') prevMove.whiteMove = true;
@@ -158,7 +168,6 @@ public partial class Engine
 
         // TODO: half and full move clocks
         // TODO: UCI extended notation
-        prevMove = new Move();
         legalMoves = FindLegalMoves(prevMove);
     }
 
@@ -202,6 +211,10 @@ public partial class Engine
     public IEnumerable<string> GetPGNs()
     {
         return legalMoves.Keys;
+    }
+    public string GetLastUCI()
+    {
+        return "";
     }
     public void UndoLastMove()
     {

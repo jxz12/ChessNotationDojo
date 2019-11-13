@@ -101,7 +101,7 @@ public class GameManager : MonoBehaviour
 
             ranks.Add(rank.GetComponent<Button>());
         }
-        board.SetFEN(thomas.ToFEN());
+        board.InitFEN(thomas.ToFEN());
 
         candidate = "";
         allCandidates = new HashSet<string>(thomas.GetPGNs());
@@ -242,7 +242,7 @@ public class GameManager : MonoBehaviour
         thomas.PlayPGN(move);
         undos.Push(move);
         redos.Clear();
-        board.SetFEN(thomas.ToFEN());
+        board.PlayMoveUCI(thomas.GetLastUCI());
         if (updateKeyboard)
         {
             allCandidates = new HashSet<string>(thomas.GetPGNs());
@@ -280,7 +280,7 @@ public class GameManager : MonoBehaviour
             candidate = sequence==null? "" : null;
 
             redos.Push(undos.Pop());
-            board.SetFEN(thomas.ToFEN());
+            board.PlayMoveUCI(thomas.GetLastUCI());
             ShowPossibleChars();
         }
         redoButton.interactable = true;
@@ -296,7 +296,7 @@ public class GameManager : MonoBehaviour
             candidate = sequence==null || redos.Count==0? "" : null;
 
             undos.Push(redo);
-            board.SetFEN(thomas.ToFEN());
+            board.PlayMoveUCI(thomas.GetLastUCI());
             ShowPossibleChars();
         }
         redoButton.interactable = redos.Count > 0;

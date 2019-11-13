@@ -179,7 +179,7 @@ public partial class Engine
         int forward = whiteToMove? NFiles : -NFiles;
 
         // go through each piece and generate moves
-        for (int pos=0; pos<=allies.Count; pos++)
+        for (int pos=0; pos<allies.Count; pos++)
         {
             int rank = GetRank(pos);
             int file = GetFile(pos);
