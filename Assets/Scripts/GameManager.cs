@@ -101,6 +101,8 @@ public class GameManager : MonoBehaviour
 
             ranks.Add(rank.GetComponent<Button>());
         }
+        print(FEN);
+        print(thomas.ToFEN());
         board.InitFEN(thomas.ToFEN());
 
         candidate = "";

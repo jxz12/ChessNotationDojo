@@ -263,14 +263,23 @@ public class Menu : MonoBehaviour
         else throw new Exception("wrong number of moves");
     }
 
+    public bool excludeSolved=true;
     Puzzle chosenPuzzle;
     void ShowRandomPuzzle(List<Puzzle> choices)
     {
-        int unsolved=0;
-        foreach (Puzzle p in choices)
+        int unsolved;
+        if (excludeSolved)
         {
-            if (!p.solved)
-                unsolved += 1;
+            unsolved = 0;
+            foreach (Puzzle p in choices)
+            {
+                if (!p.solved)
+                    unsolved += 1;
+            }
+        }
+        else
+        {
+            unsolved = choices.Count;
         }
         int choice = UnityEngine.Random.Range(0,unsolved);
         int counter = 0;
@@ -287,10 +296,18 @@ public class Menu : MonoBehaviour
                 counter += 1;
             }
         }
-        if (chosenPuzzle == null)
-            throw new Exception("could not choose puzzle");
-        else
+        if (chosenPuzzle != null)
+        {
             board.SetFEN(chosenPuzzle.FEN);
+            if (chosenPuzzle.PGN.Substring(0,4) == "1...")
+                board.FlipBoard(true);
+            else
+                board.FlipBoard(false);
+        }
+        else
+        {
+            throw new Exception("could not choose puzzle");
+        }
     }
     public void StartChosenPuzzle()
     {

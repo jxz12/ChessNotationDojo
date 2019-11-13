@@ -30,23 +30,34 @@ public class Board3D : MonoBehaviour
     
     public void FlipBoard(bool flipped)
     {
+        // if (flipped)
+        //     transform.localRotation = Quaternion.Euler(0,180,0);
+        // else
+        //     transform.localRotation = Quaternion.identity;
+
         // TODO: make this drag to spin
+        // TODO: highlight ranks and files
     }
     GameObject[,] squares;
     void InitSquares(int nRanks, int nFiles)
     {
-        foreach (Transform child in transform)
+        if (squares != null)
         {
-            GameObject.Destroy(child.gameObject);
+            foreach (var go in squares)
+                GameObject.Destroy(go);
         }
         squares = new GameObject[nFiles, nRanks];
+        float scale = 1f/Mathf.Max(nFiles, nRanks);
+        Vector3 origin = new Vector3(-(nFiles-1)*scale*.5f, 0, -(nRanks-1)*scale*.5f);
         for (int rank=0; rank<nRanks; rank++)
         {
             for (int file=0; file<nFiles; file++)
             {
                 squares[file, rank] = Instantiate(squarePrefab, transform);
-                squares[file, rank].transform.localPosition = new Vector3(file, 0, rank);
-                squares[file, rank].GetComponent<MeshRenderer>().material.color = (rank+file)%2==0? lightSq:darkSq;
+                squares[file, rank].name = (char)(file+'a') + "" + (rank+1);
+                squares[file, rank].transform.localScale = new Vector3(scale, scale, scale);
+                squares[file, rank].transform.localPosition = origin + new Vector3(file*scale, 0, rank*scale);
+                squares[file, rank].GetComponent<MeshRenderer>().material.color = (rank+file)%2==0? darkSq:lightSq;
             }
         }
     }
@@ -96,12 +107,34 @@ public class Board3D : MonoBehaviour
             {
                 var piece = Instantiate(piecePrefab, squares[file, rank].transform);
                 piece.GetComponent<MeshFilter>().mesh = pieceMeshes[c];
-                piece.GetComponent<MeshRenderer>().material.color = char.IsUpper(c)? Color.white : Color.black;
+                if (char.IsUpper(c))
+                {
+                    piece.GetComponent<MeshRenderer>().material.color = Color.white;
+                    piece.transform.rotation = Quaternion.identity;
+                }
+                else
+                {
+                    piece.GetComponent<MeshRenderer>().material.color = Color.black;
+                    piece.transform.rotation = Quaternion.Euler(0,180,0);
+                }
             }
         }
     }
     public void PlayMoveUCI(string UCI)
     {
+        int sourceFile = UCI[0] - 'a';
+        int sourceRank = UCI[1];
+        int targetFile = UCI[2] - 'a';
+        int targetRank = UCI[3];
 
+        if (squares[targetFile, targetRank].transform.childCount > 0)
+        {
+            Destroy(squares[targetFile, targetRank].transform.GetChild(0));
+        }
+        squares[sourceFile, sourceRank].transform.GetChild(0).SetParent(squares[targetFile, targetRank].transform, false);
+        if (UCI.Length > 4)
+        {
+            squares[sourceFile, sourceRank].transform.GetChild(0).GetComponent<MeshFilter>().mesh = pieceMeshes[UCI[4]];
+        }
     }
 }

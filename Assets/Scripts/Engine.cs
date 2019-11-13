@@ -212,9 +212,24 @@ public partial class Engine
     {
         return legalMoves.Keys;
     }
-    public string GetLastUCI()
+    public string GetLastUCI() // not real UCI because it isn't smart enough for other boards
     {
-        return "";
+        var sb = new StringBuilder();
+        sb.Append((char)('a'+GetFile(prevMove.source)));
+        sb.Append(GetRank(prevMove.source));
+        sb.Append((char)('a'+GetFile(prevMove.target)));
+        sb.Append(GetRank(prevMove.target));
+
+        // FIXME:
+        // if (prevMove.type == Move.Special.Castle)
+        //     sb.Append(fuck castling);
+        // FIXME:
+        // if (prevMove.type == Move.Special.EnPassant)
+        //     sb.Append("x").Append();
+        if (prevMove.promotion != Piece.None)
+            sb.Append(pieceStrings[prevMove.promotion]);
+
+        return sb.ToString();
     }
     public void UndoLastMove()
     {
@@ -248,17 +263,11 @@ public partial class Engine
         var sb = new StringBuilder();
 
         int empty = 0;
-        for (int pos=0; pos<whitePieces.Count; pos++)
+        int rank = NRanks-1;
+        int file = 0;
+        while (rank >= 0)
         {
-            if (pos > 0 && pos%NFiles == 0)
-            {
-                if (empty > 0)
-                {
-                    sb.Append(empty);
-                    empty = 0;
-                }
-                sb.Append('/');
-            }
+            int pos = GetPos(rank, file);
             if (whitePieces[pos] == Piece.None && blackPieces[pos] == Piece.None)
             {
                 empty += 1;
@@ -283,13 +292,26 @@ public partial class Engine
                     sb.Append(pieceStrings[blackPieces[pos]]);
                 }
             }
+            file += 1;
+            if (file >= NFiles)
+            {
+                file = 0;
+                rank -= 1;
+                if (empty > 0)
+                {
+                    sb.Append(empty);
+                    empty = 0;
+                }
+                if (rank >= 0)
+                    sb.Append('/');
+            }
         }
 
         // who to move
         sb.Append(' ').Append(moveCount%2==0? 'w' : 'b');
 
         // castling TODO: use shredder fen for this
-        sb.Append("FUCKTHISGAME");
+        sb.Append(" FUCKTHISGAME");
 
         // en passant
         if (prevMove.type == Move.Special.Puush)
