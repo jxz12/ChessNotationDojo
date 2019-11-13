@@ -10,7 +10,7 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] Button N, B, R, Q, K, x, eq, O_O, O_O_O;
+    [SerializeField] Button N, B, R, Q, K, x, eq;
     [SerializeField] HorizontalLayoutGroup ranksParent, filesParent;
     [SerializeField] Button undoButton, redoButton, quitButton, evalButton;
     [SerializeField] Text titleText;
@@ -25,8 +25,6 @@ public class GameManager : MonoBehaviour
         K.onClick.AddListener(()=> InputChar('K'));
         x.onClick.AddListener(()=> InputChar('x'));
         eq.onClick.AddListener(()=> InputChar('='));
-        O_O.onClick.AddListener(()=> InputChar('>'));
-        O_O_O.onClick.AddListener(()=> InputChar('<'));
 
         undoButton.onClick.AddListener(()=> UndoMove());
         redoButton.onClick.AddListener(()=> RedoMove());
@@ -36,9 +34,10 @@ public class GameManager : MonoBehaviour
 
     // private BoardAscii board;
     // [SerializeField] BoardAscii boardPrefab;
-    [SerializeField] BoardAscii board;
+    // [SerializeField] BoardAscii board;
+    [SerializeField] Board3D board;
     
-    [SerializeField] GameObject coordPrefab;
+    [SerializeField] GameObject inputPrefab;
     List<Button> ranks;
     List<Button> files;
 
@@ -82,7 +81,7 @@ public class GameManager : MonoBehaviour
         for (int i=0; i<thomas.NFiles; i++)
         {
             char input = (char)('a'+i);
-            var file = Instantiate(coordPrefab);
+            var file = Instantiate(inputPrefab);
             file.GetComponent<Button>().onClick.AddListener(()=> InputChar(input));
             file.GetComponentInChildren<Text>().text = file.name = input.ToString();
             file.transform.SetParent(filesParent.transform, false);
@@ -94,7 +93,7 @@ public class GameManager : MonoBehaviour
         for (int i=0; i<thomas.NRanks; i++)
         {
             char input = (char)('1'+i);
-            var rank = Instantiate(coordPrefab);
+            var rank = Instantiate(inputPrefab);
             rank.GetComponent<Button>().onClick.AddListener(()=> InputChar(input));
             rank.GetComponentInChildren<Text>().text = rank.name = input.ToString();
             rank.transform.SetParent(ranksParent.transform, false);
@@ -158,8 +157,6 @@ public class GameManager : MonoBehaviour
         K.interactable = false;
         eq.interactable = false;
         x.interactable = false;
-        O_O.interactable = false;
-        O_O_O.interactable = false;
         foreach (Button b in files)
         {
             b.interactable = false;
@@ -195,8 +192,6 @@ public class GameManager : MonoBehaviour
             else if (c == 'K') K.interactable = true;
             else if (c == 'x') x.interactable = true;
             else if (c == '=') eq.interactable = true;
-            else if (c == '>') O_O.interactable = true;
-            else if (c == '<') O_O_O.interactable = true;
         }
     }
     void InputChar(char input)

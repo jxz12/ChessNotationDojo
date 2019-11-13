@@ -119,56 +119,57 @@ public partial class Engine
         }
         return -1;
     }
-    private int GetCastledPos(int king, bool left, bool whiteToMove)
-    {
-        int rank = GetRank(king);
-        int file = left? LeftCastledFile : RightCastledFile;
-        return GetPos(rank, file);
-    }
-    private bool FindCastlingRook(int king, bool left, bool whiteToMove, out int virginRook)
-    {
-        virginRook = FindVirginRook(king, left, whiteToMove);
-        if (virginRook < 0)
-            return false;
-        int castledPos = GetCastledPos(king, left, whiteToMove);
-        if (castledPos < 0)
-            return false;
+    // FIXME:
+    // private int GetCastledPos(int king, bool left, bool whiteToMove)
+    // {
+    //     int rank = GetRank(king);
+    //     int file = left? LeftCastledFile : RightCastledFile;
+    //     return GetPos(rank, file);
+    // }
+    // private bool FindCastlingRook(int king, bool left, bool whiteToMove, out int virginRook)
+    // {
+    //     virginRook = FindVirginRook(king, left, whiteToMove);
+    //     if (virginRook < 0)
+    //         return false;
+    //     int castledPos = GetCastledPos(king, left, whiteToMove);
+    //     if (castledPos < 0)
+    //         return false;
         
-        // check whether all squares involved are free
-        int leftmostPos =  left? Math.Min(virginRook, castledPos)
-                               : Math.Min(castledPos-1, king);
-        int rightmostPos = left? Math.Max(castledPos+1, king)
-                               : Math.Max(virginRook, castledPos);
+    //     // check whether all squares involved are free
+    //     int leftmostPos =  left? Math.Min(virginRook, castledPos)
+    //                            : Math.Min(castledPos-1, king);
+    //     int rightmostPos = left? Math.Max(castledPos+1, king)
+    //                            : Math.Max(virginRook, castledPos);
 
-        for (int pos=leftmostPos; pos<=rightmostPos; pos++)
-        {
-            if (pos!=king && pos!=virginRook && Occupied(pos))
-                return false;
-        }
-        return true;
-    }
-    private bool IsRookLeftCastle(int rook, bool whiteRook)
-    {
-        int rank = GetRank(rook);
-        int file = GetFile(rook);
+    //     for (int pos=leftmostPos; pos<=rightmostPos; pos++)
+    //     {
+    //         if (pos!=king && pos!=virginRook && Occupied(pos))
+    //             return false;
+    //     }
+    //     return true;
+    // }
+    // private bool IsRookLeftCastle(int rook, bool whiteRook)
+    // {
+    //     int rank = GetRank(rook);
+    //     int file = GetFile(rook);
         
-        var allies = whiteRook? whitePieces : blackPieces;
-        int hop = 1;
-        while (rank-hop >= 0 && rank+hop < NFiles)
-        {
-            // Piece kingCheck;
-            if (allies[rook-hop] == Piece.VirginKing)
-                return true;
-            if (allies[rook+hop] == Piece.VirginKing)
-                return false;
+    //     var allies = whiteRook? whitePieces : blackPieces;
+    //     int hop = 1;
+    //     while (rank-hop >= 0 && rank+hop < NFiles)
+    //     {
+    //         // Piece kingCheck;
+    //         if (allies[rook-hop] == Piece.VirginKing)
+    //             return true;
+    //         if (allies[rook+hop] == Piece.VirginKing)
+    //             return false;
 
-            hop += 1;
-        }
-        if (rank-hop == 0)
-            return true;
-        else // right
-            return false;
-    }
+    //         hop += 1;
+    //     }
+    //     if (rank-hop == 0)
+    //         return true;
+    //     else // right
+    //         return false;
+    // }
     // Generate candidate moves given the current board state and previous move
     private IEnumerable<Move> FindPseudoLegalMoves(Move current)
     {
@@ -200,22 +201,23 @@ public partial class Engine
                     foreach (Move m in PromotionsIfPossible(push))
                         yield return m;
                     
-                    // puush TODO: change into up to half way! (for double chess)
-                    if (allies[pos] == Piece.VirginPawn &&
-                        !Occupied(pos+2*forward))
-                    {
-                        var puush = new Move() {
-                            whiteMove = whiteToMove,
-                            source = pos,
-                            target = pos + 2*forward,
-                            type = Move.Special.Normal,
-                            moved = Piece.VirginPawn,
-                            promotion = Piece.Pawn,
-                            previous = current
-                        };
-                        foreach (Move m in PromotionsIfPossible(puush))
-                            yield return m;
-                    }
+                    // FIXME:
+                    // // puush
+                    // if (allies[pos] == Piece.VirginPawn &&
+                    //     !Occupied(pos+2*forward))
+                    // {
+                    //     var puush = new Move() {
+                    //         whiteMove = whiteToMove,
+                    //         source = pos,
+                    //         target = pos + 2*forward,
+                    //         type = Move.Special.Normal,
+                    //         moved = Piece.VirginPawn,
+                    //         promotion = Piece.Pawn,
+                    //         previous = current
+                    //     };
+                    //     foreach (Move m in PromotionsIfPossible(puush))
+                    //         yield return m;
+                    // }
                 }
                 
                 // captures
@@ -369,34 +371,35 @@ public partial class Engine
                         previous = current
                     };
                 }
-                // castling
-                if (allies[pos] == Piece.VirginKing)
-                {
-                    int leftRook;
-                    if (FindCastlingRook(pos, true, whiteToMove, out leftRook))
-                    {
-                        yield return new Move() {
-                            whiteMove = whiteToMove,
-                            source = pos,
-                            target = leftRook,
-                            type = Move.Special.Castle,
-                            moved = Piece.VirginKing,
-                            previous = current
-                        };
-                    }
-                    int rightRook;
-                    if (FindCastlingRook(pos, false, whiteToMove, out rightRook))
-                    {
-                        yield return new Move() {
-                            whiteMove = whiteToMove,
-                            source = pos,
-                            target = rightRook,
-                            type = Move.Special.Castle,
-                            moved = Piece.VirginKing,
-                            previous = current
-                        };
-                    }
-                }
+                // FIXME:
+                // // castling
+                // if (allies[pos] == Piece.VirginKing)
+                // {
+                //     int leftRook;
+                //     if (FindCastlingRook(pos, true, whiteToMove, out leftRook))
+                //     {
+                //         yield return new Move() {
+                //             whiteMove = whiteToMove,
+                //             source = pos,
+                //             target = leftRook,
+                //             type = Move.Special.Castle,
+                //             moved = Piece.VirginKing,
+                //             previous = current
+                //         };
+                //     }
+                //     int rightRook;
+                //     if (FindCastlingRook(pos, false, whiteToMove, out rightRook))
+                //     {
+                //         yield return new Move() {
+                //             whiteMove = whiteToMove,
+                //             source = pos,
+                //             target = rightRook,
+                //             type = Move.Special.Castle,
+                //             moved = Piece.VirginKing,
+                //             previous = current
+                //         };
+                //     }
+                // }
             }
         }
     }
@@ -453,26 +456,28 @@ public partial class Engine
         }
         else
         {
-            // need to also check all squares moved through when castling
-            int kingLeft;
-            int kingRight;
-            if (current.source < current.target)
-            {
-                kingLeft = current.source;
-                kingRight = GetPos(GetRank(current.source), RightCastledFile);
-            }
-            else
-            {
-                kingLeft = GetPos(GetRank(current.source), LeftCastledFile);
-                kingRight = current.source;
-            }
-            foreach (Move next in nexts)
-            {
-                if (next.target >= kingLeft && next.target <= kingRight)
-                {
-                    return true;
-                }
-            }
+            // FIXME:
+            // // need to also check all squares moved through when castling
+            // int kingLeft;
+            // int kingRight;
+            // if (current.source < current.target)
+            // {
+            //     kingLeft = current.source;
+            //     kingRight = GetPos(GetRank(current.source), RightCastledFile);
+            // }
+            // else
+            // {
+            //     kingLeft = GetPos(GetRank(current.source), LeftCastledFile);
+            //     kingRight = current.source;
+            // }
+            // foreach (Move next in nexts)
+            // {
+            //     if (next.target >= kingLeft && next.target <= kingRight)
+            //     {
+            //         return true;
+            //     }
+            // }
+            return true;
         }
         return false;
     }
@@ -556,14 +561,15 @@ public partial class Engine
         RemovePiece(move.moved, move.source, move.whiteMove);
         if (move.type == Move.Special.Castle)
         {
-            RemovePiece(Piece.VirginRook, move.target, move.whiteMove);
+            // FIXME:
+            // RemovePiece(Piece.VirginRook, move.target, move.whiteMove);
 
-            int rank = GetRank(move.source);
-            bool left = move.source > move.target;
-            int castledKing = GetCastledPos(move.source, left, move.whiteMove);
-            int castledRook = left? castledKing+1 : castledKing-1;
-            AddPiece(Piece.King, castledKing, move.whiteMove);
-            AddPiece(Piece.Rook, castledRook, move.whiteMove);
+            // int rank = GetRank(move.source);
+            // bool left = move.source > move.target;
+            // int castledKing = GetCastledPos(move.source, left, move.whiteMove);
+            // int castledRook = left? castledKing+1 : castledKing-1;
+            // AddPiece(Piece.King, castledKing, move.whiteMove);
+            // AddPiece(Piece.Rook, castledRook, move.whiteMove);
         }
         else if (move.promotion != Piece.None)
         {
@@ -582,14 +588,15 @@ public partial class Engine
         // move back source
         if (move.type == Move.Special.Castle)
         {
-            int rank = GetRank(move.source);
-            bool left = move.source > move.target;
-            int castledKing = GetCastledPos(move.source, left, move.whiteMove);
-            int castledRook = left? castledKing+1 : castledKing-1;
-            RemovePiece(Piece.King, castledKing, move.whiteMove);
-            RemovePiece(Piece.Rook, castledRook, move.whiteMove);
+            // FIXME:
+            // int rank = GetRank(move.source);
+            // bool left = move.source > move.target;
+            // int castledKing = GetCastledPos(move.source, left, move.whiteMove);
+            // int castledRook = left? castledKing+1 : castledKing-1;
+            // RemovePiece(Piece.King, castledKing, move.whiteMove);
+            // RemovePiece(Piece.Rook, castledRook, move.whiteMove);
 
-            AddPiece(Piece.VirginRook, move.target, move.whiteMove);
+            // AddPiece(Piece.VirginRook, move.target, move.whiteMove);
         }
         else if (move.promotion != Piece.None)
         {

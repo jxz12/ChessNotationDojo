@@ -12,6 +12,9 @@ using System.Text.RegularExpressions;
 public class Menu : MonoBehaviour
 {
     [SerializeField] GameManager gm;
+    [SerializeField] TextAsset m8n2, m8n3, m8n4, quotes;
+    [SerializeField] Text progress2, progress3, progress4;
+    [SerializeField] BoardAscii board;
 
     public void StartFullGame()
     {
@@ -28,7 +31,7 @@ public class Menu : MonoBehaviour
     public void StartHordeChess()
     {
         // "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w AH -"
-        // no puush
+        // puush=0
     }
     public void StartDoubleChess()
     {
@@ -94,9 +97,7 @@ public class Menu : MonoBehaviour
         // "kqbnr/ppppp/5/PPPPP/RNBQK w 
     }
 
-    [SerializeField] TextAsset m8n2, m8n3, m8n4, quotes;
-    [SerializeField] Font chosenFont; // TODO: choices and textmeshpro
-    [Serializable] public class Puzzle
+    public class Puzzle
     {
         public string name;
         public string FEN;
@@ -106,12 +107,12 @@ public class Menu : MonoBehaviour
     List<Puzzle> puzzles2, puzzles3, puzzles4;
     void Awake()
     {
-        // puzzles2 = InitPuzzles(m8n2.text, Application.persistentDataPath+"/m8n2.gd");
-        // puzzles3 = InitPuzzles(m8n3.text, Application.persistentDataPath+"/m8n3.gd");
-        // puzzles4 = InitPuzzles(m8n4.text, Application.persistentDataPath+"/m8n4.gd");
-        // ShowAllProgress();
+        puzzles2 = InitPuzzles(m8n2.text, Application.persistentDataPath+"/m8n2.gd");
+        puzzles3 = InitPuzzles(m8n3.text, Application.persistentDataPath+"/m8n3.gd");
+        puzzles4 = InitPuzzles(m8n4.text, Application.persistentDataPath+"/m8n4.gd");
+        ShowAllProgress();
 
-        // quotesList = LoadQuotes(quotes.text);
+        quotesList = LoadQuotes(quotes.text);
     }
 
     List<Puzzle> InitPuzzles(string input, string path)
@@ -213,7 +214,6 @@ public class Menu : MonoBehaviour
             print(e);
         }
     }
-    [SerializeField] Text progress2, progress3, progress4;
     void ShowAllProgress()
     {
         ShowProgress(puzzles2, progress2);
@@ -246,20 +246,25 @@ public class Menu : MonoBehaviour
             print(e);
         }
     }
-    public void RandomPuzzle2()
+    public void ShowRandomPuzzle(int numMoves)
     {
-        StartPuzzle(puzzles2);
-    }
-    public void RandomPuzzle3()
-    {
-        StartPuzzle(puzzles3);
-    }
-    public void RandomPuzzle4()
-    {
-        StartPuzzle(puzzles4);
+        if (numMoves == 2)
+        {
+            ShowRandomPuzzle(puzzles2);
+        }
+        else if (numMoves == 3)
+        {
+            ShowRandomPuzzle(puzzles3);
+        }
+        else if (numMoves == 4)
+        {
+            ShowRandomPuzzle(puzzles4);
+        }
+        else throw new Exception("wrong number of moves");
     }
 
-    void StartPuzzle(List<Puzzle> choices)
+    Puzzle chosenPuzzle;
+    void ShowRandomPuzzle(List<Puzzle> choices)
     {
         int unsolved=0;
         foreach (Puzzle p in choices)
@@ -269,7 +274,7 @@ public class Menu : MonoBehaviour
         }
         int choice = UnityEngine.Random.Range(0,unsolved);
         int counter = 0;
-        Puzzle chosenPuzzle = null;
+        chosenPuzzle = null;
         foreach (Puzzle p in choices)
         {
             if (!p.solved)
@@ -284,10 +289,19 @@ public class Menu : MonoBehaviour
         }
         if (chosenPuzzle == null)
             throw new Exception("could not choose puzzle");
+        else
+            board.SetFEN(chosenPuzzle.FEN);
+    }
+    public void StartChosenPuzzle()
+    {
+        if (chosenPuzzle == null)
+            throw new Exception("no puzzle chosen");
 
         gm.SetTitle(chosenPuzzle.name);
         gm.StartPuzzle(chosenPuzzle.FEN, chosenPuzzle.PGN,
-                       ()=>{ chosenPuzzle.solved = true; SaveAllPuzzles(); ShowAllProgress(); });
+                       ()=>{ chosenPuzzle.solved = true;
+                             SaveAllPuzzles();
+                             ShowAllProgress(); });
         ChooseQuote();
         Hide();
     }

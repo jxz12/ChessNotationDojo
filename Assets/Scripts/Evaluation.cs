@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 public partial class Engine
 {
-    int checks, captures, castles, promos, EPs;
+    int checks, captures, castls, promos, EPs;
     public int Perft(int ply)
     {
-        captures = EPs = castles = promos = checks = 0;
+        captures = EPs = castls = promos = checks = 0;
         int nodes = Perft(prevMove, ply);
 
         // UnityEngine.Debug.Log(captures + " " + EPs + " " + castles + " " + promos + " " + checks);
@@ -27,7 +27,7 @@ public partial class Engine
             {
                 if (current.captured != Piece.None) captures += 1;
                 if (current.type == Move.Special.EnPassant) EPs += 1;
-                if (current.type == Move.Special.Castle) castles += 1;
+                if (current.type == Move.Special.Castle) castls += 1;
                 if (current.promotion != Piece.None
                     && current.moved == Piece.Pawn) promos += 1;
                 if (IsCheck(current)) checks += 1;
@@ -75,8 +75,10 @@ public partial class Engine
         string bestAlgebraic = null;
         foreach (string algebraic in legalMoves.Keys)
         {
-            int eval = NegaMax(legalMoves[algebraic], ply, -999, 999, prevMove.whiteMove?-1:1);
-            if (eval > bestEval) // TODO: random choice
+            // FIXME: simple 2-ply with randomness added in!
+            // int eval = NegaMax(legalMoves[algebraic], ply, -999, 999, prevMove.whiteMove?-1:1);
+            int eval = UnityEngine.Random.Range(0,100);
+            if (eval > bestEval)
             {
                 bestEval = eval;
                 bestAlgebraic = algebraic;

@@ -34,13 +34,22 @@ public class BoardAscii : MonoBehaviour
                 squares.Add(square.GetComponentInChildren<Text>());
             }
         }
-        GetComponent<AspectRatioFitter>().aspectRatio = (float)nFiles/nRanks;
+        // GetComponent<AspectRatioFitter>().aspectRatio = (float)nFiles/nRanks;
     }
     private int nRanks, nFiles;
     public void SetFEN(string FEN)
     {
         int nRanksNew = FEN.Count(c=>c=='/') + 1;
-        int nFilesNew = FEN.IndexOf('/');
+        int nFilesNew = 0;
+        foreach (char c in FEN)
+        {
+            if (c == '/')
+                break;
+            else if (c >= '1' && c <= '9')
+                nFilesNew += c - '0';
+            else
+                nFilesNew += 1;
+        }
         if (nRanksNew != nRanks || nFilesNew != nRanks)
         {
             nRanks = nRanksNew;
@@ -70,14 +79,14 @@ public class BoardAscii : MonoBehaviour
                 rank -= 1;
                 file = -1;
             }
-            else if (c > '0' && c <= '9')
+            else if (c >= '1' && c <= '9')
             {
-                int newFile = file + (c - '1'); // -1 because file will be incremented regardless
-                for (int j=file; j<=newFile; j++)
+                int newFile = file + (c - '0');
+                for (int j=0; j<newFile-file; j++)
                 {
                     squares[pos+j].text = "";
                 }
-                file = newFile;
+                file = newFile - 1; // -1 because file will be incremented regardless
             }
             else
             {

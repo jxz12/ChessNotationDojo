@@ -13,13 +13,10 @@ public partial class Engine
 
     private List<Piece> whitePieces = new List<Piece>();
     private List<Piece> blackPieces = new List<Piece>();
-    private Dictionary<king, castlable rooks> TODO
+    private Dictionary<int, int> castles = new Dictionary<int, int>();
 
     public int NRanks { get; private set; } = 8;
     public int NFiles { get; private set; } = 8;
-    // for where castled kings go, may be different in variants
-    public int LeftCastledFile  { get; private set; } 
-    public int RightCastledFile { get; private set; }
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
@@ -43,12 +40,20 @@ public partial class Engine
     private int moveCount;
 
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1",
-                  int leftCastledFile=2, int rightCastledFile=6, // TODO: change into array
-                  bool puush=true)
+                  int puush=2, bool castle960=false)
     {
         // board = new Board();
         NRanks = FEN.Count(c=>c=='/') + 1;
-        NFiles = FEN.IndexOf('/');
+        NFiles = 0;
+        foreach (char c in FEN)
+        {
+            if (c == '/')
+                break;
+            else if (c >= '1' && c <= '9')
+                NFiles += c - '0';
+            else
+                NFiles += 1;
+        }
         if (NFiles > 26 || NRanks > 16)
             throw new Exception("cannot have more than 26x16 board (blame ASCII lol)");
 
@@ -67,19 +72,19 @@ public partial class Engine
                 rank -= 1;
                 file = -1;
             }
-            else if (FEN[i] > '0' && FEN[i] <= '9')
+            else if (FEN[i] >= '1' && FEN[i] <= '9')
             {
                 file += FEN[i] - '1'; // -1 because file will be incremented regardless
             }
-            else if (FEN[i] == 'P') whitePieces[pos] = (puush && GetRank(pos)==1)
-                                                       ? Piece.VirginPawn : Piece.Pawn;
+            else if (FEN[i] == 'P') whitePieces[pos] = GetRank(pos)==1?
+                                                       Piece.VirginPawn:Piece.Pawn;
             else if (FEN[i] == 'R') whitePieces[pos] = Piece.Rook;
             else if (FEN[i] == 'N') whitePieces[pos] = Piece.Knight;
             else if (FEN[i] == 'B') whitePieces[pos] = Piece.Bishop;
             else if (FEN[i] == 'Q') whitePieces[pos] = Piece.Queen;
             else if (FEN[i] == 'K') whitePieces[pos] = Piece.VirginKing;
-            else if (FEN[i] == 'p') blackPieces[pos] = (puush && GetRank(pos)==NRanks-2)
-                                                       ? Piece.VirginPawn : Piece.Pawn;
+            else if (FEN[i] == 'p') blackPieces[pos] = GetRank(pos)==NRanks-2?
+                                                       Piece.VirginPawn:Piece.Pawn;
             else if (FEN[i] == 'r') blackPieces[pos] = Piece.Rook;
             else if (FEN[i] == 'n') blackPieces[pos] = Piece.Knight;
             else if (FEN[i] == 'b') blackPieces[pos] = Piece.Bishop;
@@ -96,65 +101,64 @@ public partial class Engine
         else if (FEN[i] == 'b') prevMove.whiteMove = true;
         else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-        // castling I HATE YOU TODO: shredder FEN, only make one of the rooks virgins
-        i += 2;
-        bool K,Q,k,q;
-        K=Q=k=q=false;
-        while (FEN[i] != ' ')
-        {
-            if (FEN[i] == 'K') K = true;
-            else if (FEN[i] == 'Q') Q = true;
-            else if (FEN[i] == 'k') k = true;
-            else if (FEN[i] == 'q') q = true;
-            else if (FEN[i] == '-') {}
-            else throw new Exception("unexpected character " + FEN[i] + " at " + i);
+        // FIXME:
+        // castling I HATE YOU
+        // i += 2;
+        // bool K,Q,k,q;
+        // K=Q=k=q=false;
+        // while (FEN[i] != ' ')
+        // {
+        //     if (FEN[i] == 'K') K = true;
+        //     else if (FEN[i] == 'Q') Q = true;
+        //     else if (FEN[i] == 'k') k = true;
+        //     else if (FEN[i] == 'q') q = true;
+        //     else if (FEN[i] == '-') {}
+        //     else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-            i += 1;
-        }
-        foreach (int pos in whitePieces)
-        {
-            if (whitePieces[pos] == Piece.Rook)
-            {
-                bool leftRook = IsRookLeftCastle(pos, true);
-                if (leftRook && K)
-                    whitePieces[pos] = Piece.VirginRook;
-                if (!leftRook && Q)
-                    whitePieces[pos] = Piece.VirginRook;
-            }
-        }
-        foreach (int pos in blackPieces)
-        {
-            if (blackPieces[pos] == Piece.Rook)
-            {
-                bool leftRook = IsRookLeftCastle(pos, false);
-                if (leftRook && k)
-                    blackPieces[pos] = Piece.VirginRook;
-                if (!leftRook && q)
-                    blackPieces[pos] = Piece.VirginRook;
-            }
-        }
+        //     i += 1;
+        // }
+        // foreach (int pos in whitePieces)
+        // {
+        //     if (whitePieces[pos] == Piece.Rook)
+        //     {
+        //         bool leftRook = IsRookLeftCastle(pos, true);
+        //         if (leftRook && K)
+        //             whitePieces[pos] = Piece.VirginRook;
+        //         if (!leftRook && Q)
+        //             whitePieces[pos] = Piece.VirginRook;
+        //     }
+        // }
+        // foreach (int pos in blackPieces)
+        // {
+        //     if (blackPieces[pos] == Piece.Rook)
+        //     {
+        //         bool leftRook = IsRookLeftCastle(pos, false);
+        //         if (leftRook && k)
+        //             blackPieces[pos] = Piece.VirginRook;
+        //         if (!leftRook && q)
+        //             blackPieces[pos] = Piece.VirginRook;
+        //     }
+        // }
 
+        // FIXME:
         // en passant
-        i += 1;
-        if (FEN[i] != '-')
-        {
-            file = FEN[i] - 'a';
-            if (file < 0 || file >= NFiles)
-                throw new Exception("unexpected character " + FEN[i] + " at " + i);
-            else
-            {
-                prevMove.moved = Piece.VirginPawn;
-                prevMove.source = prevMove.whiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
-                prevMove.target = prevMove.whiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
-            }
-        }
+        // i += 1;
+        // if (FEN[i] != '-')
+        // {
+        //     file = FEN[i] - 'a';
+        //     if (file < 0 || file >= NFiles)
+        //         throw new Exception("unexpected character " + FEN[i] + " at " + i);
+        //     else
+        //     {
+        //         prevMove.moved = Piece.VirginPawn;
+        //         prevMove.source = prevMove.whiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
+        //         prevMove.target = prevMove.whiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
+        //     }
+        // }
+
         // TODO: half and full move clocks
-        prevMove = new Move();
         // TODO: UCI extended notation
-
-        LeftCastledFile = leftCastledFile;
-        RightCastledFile = rightCastledFile;
-
+        prevMove = new Move();
         legalMoves = FindLegalMoves(prevMove);
     }
 
