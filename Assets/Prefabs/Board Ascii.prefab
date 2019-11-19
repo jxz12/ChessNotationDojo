@@ -53,6 +53,8 @@ MonoBehaviour:
     type: 3}
   lightSq: {r: 0.9433962, g: 0.7945081, b: 0.5562478, a: 1}
   darkSq: {r: 0.4056604, g: 0.29431492, b: 0.1473389, a: 1}
+  lightPc: {fileID: 2100000, guid: b1fc3fca683414a14a37f573f1a3e66f, type: 2}
+  darkPc: {fileID: 2100000, guid: b5e155a0f27ba41258f0893a05c5950a, type: 2}
 --- !u!114 &3036327176053545033
 MonoBehaviour:
   m_ObjectHideFlags: 0

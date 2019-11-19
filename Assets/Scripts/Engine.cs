@@ -13,10 +13,11 @@ public partial class Engine
 
     private List<Piece> whitePieces;
     private List<Piece> blackPieces;
-    // private Dictionary<int, int> castles; // FIXME:
+    private Dictionary<int, HashSet<int>> castles; // rook->king
+    // each 
 
-    public int NRanks { get; private set; } = 8;
-    public int NFiles { get; private set; } = 8;
+    public int NRanks { get; private set; }
+    public int NFiles { get; private set; }
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
@@ -37,7 +38,7 @@ public partial class Engine
 
     // current to evaluate
     private Move prevMove;
-    private int moveCount;
+    private int totalPly;
 
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1",
                   int puush=2, bool castle960=false)
@@ -111,63 +112,85 @@ public partial class Engine
         else if (FEN[i] == 'b') prevMove.whiteMove = true;
         else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-        // FIXME:
         // castling I HATE YOU
-        // i += 2;
-        // bool K,Q,k,q;
-        // K=Q=k=q=false;
-        // while (FEN[i] != ' ')
-        // {
-        //     if (FEN[i] == 'K') K = true;
-        //     else if (FEN[i] == 'Q') Q = true;
-        //     else if (FEN[i] == 'k') k = true;
-        //     else if (FEN[i] == 'q') q = true;
-        //     else if (FEN[i] == '-') {}
-        //     else throw new Exception("unexpected character " + FEN[i] + " at " + i);
+        i += 2;
+        castles = new Dictionary<int, HashSet<int>>();
+        for (int pos=0; pos<whitePieces.Count; pos++)
+        {
+            if (whitePieces[pos] == Piece.VirginKing || blackPieces[pos] == Piece.VirginKing)
+                castles[pos] = new HashSet<int>();
+        }
+        while (FEN[i] != ' ')
+        {
+            if ((FEN[i] >= 'A' && FEN[i] <= 'Z') || (FEN[i] >= 'a' && FEN[i] <= 'z'))
+            {
+                bool white = char.IsUpper(FEN[i]);
+                int rookFile = white? FEN[i] - 'A' : FEN[i] - 'a';
+                int rookRank = white? 0 : NRanks-1;
+                var allies = white? whitePieces : blackPieces;
 
-        //     i += 1;
-        // }
-        // foreach (int pos in whitePieces)
-        // {
-        //     if (whitePieces[pos] == Piece.Rook)
-        //     {
-        //         bool leftRook = IsRookLeftCastle(pos, true);
-        //         if (leftRook && K)
-        //             whitePieces[pos] = Piece.VirginRook;
-        //         if (!leftRook && Q)
-        //             whitePieces[pos] = Piece.VirginRook;
-        //     }
-        // }
-        // foreach (int pos in blackPieces)
-        // {
-        //     if (blackPieces[pos] == Piece.Rook)
-        //     {
-        //         bool leftRook = IsRookLeftCastle(pos, false);
-        //         if (leftRook && k)
-        //             blackPieces[pos] = Piece.VirginRook;
-        //         if (!leftRook && q)
-        //             blackPieces[pos] = Piece.VirginRook;
-        //     }
-        // }
+                int rookPos = GetPos(rookRank, rookFile);
+                if (allies[rookPos] != Piece.Rook)
+                {
+                    throw new Exception("no rook on " + FEN[i] + " file");
+                }
+                // find closest King left
+                for (int kingFile=rookFile-1; kingFile>=0; kingFile--)
+                {
+                    int kingPos = GetPos(0, kingFile);
+                    if (allies[kingPos] == Piece.VirginKing)
+                    {
+                        castles[kingPos].Add(rookPos);
+                        break; // only connect to closest king
+                    }
+                }
+                for (int kingFile=rookFile+1; kingFile<NFiles; kingFile++)
+                {
+                    int kingPos = GetPos(0, kingFile);
+                    if (allies[kingPos] == Piece.VirginKing)
+                    {
+                        castles[kingPos].Add(rookPos);
+                        break; // only connect to closest king
+                    }
+                }
+            }
+            else if (FEN[i] == '-') {}
+            else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
-        // FIXME:
+            i += 1;
+        }
+
         // en passant
-        // i += 1;
-        // if (FEN[i] != '-')
-        // {
-        //     file = FEN[i] - 'a';
-        //     if (file < 0 || file >= NFiles)
-        //         throw new Exception("unexpected character " + FEN[i] + " at " + i);
-        //     else
-        //     {
-        //         prevMove.moved = Piece.VirginPawn;
-        //         prevMove.source = prevMove.whiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
-        //         prevMove.target = prevMove.whiteMove? GetPos(3, file) : GetPos(NRanks-4, file);
-        //     }
-        // }
+        i += 1;
+        if (FEN[i] != '-')
+        {
+            file = FEN[i] - 'a';
+            rank = FEN[i] - '1';
 
-        // TODO: half and full move clocks
-        // TODO: UCI extended notation
+            if (file < 0 || file >= NFiles || rank < 0 || rank >= NRanks)
+                throw new Exception("unexpected character " + FEN[i] + " at " + i);
+            else
+            {
+                prevMove.moved = Piece.VirginPawn;
+                prevMove.source = prevMove.whiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
+                prevMove.target = GetPos(rank, file);
+            }
+            i += 1;
+        }
+
+        // half move clock
+        i += 2;
+        int len = 1;
+        while (FEN[i+len] != ' ')
+        {
+            len += 1;
+        }
+        prevMove.halfMoveClock = int.Parse(FEN.Substring(i, len));
+
+        i += len + 1;
+        totalPly = int.Parse(FEN.Substring(i)) + (prevMove.whiteMove? 1:0);
+        // don't care about move count
+
         legalMoves = FindLegalMoves(prevMove);
     }
 
@@ -201,7 +224,7 @@ public partial class Engine
             PlayMove(toPlay);
             prevMove = toPlay;
             legalMoves = FindLegalMoves(prevMove);
-            moveCount += 1;
+            totalPly += 1;
         }
         else
         {
@@ -238,7 +261,7 @@ public partial class Engine
             UndoMove(prevMove);
             prevMove = prevMove.previous;
             legalMoves = FindLegalMoves(prevMove);
-            moveCount -= 1;
+            totalPly -= 1;
         }
         else
         {
@@ -247,15 +270,15 @@ public partial class Engine
     }
 
     private static Dictionary<Piece, string> pieceStrings = new Dictionary<Piece, string>() {
-        { Piece.Pawn, "p" },
-        { Piece.VirginPawn, "p" },
-        { Piece.Rook, "r" },
-        { Piece.VirginRook, "r" },
-        { Piece.Knight, "n" },
-        { Piece.Bishop, "b" },
-        { Piece.Queen, "q" },
-        { Piece.King, "k" },
-        { Piece.VirginKing, "k" },
+        { Piece.Pawn, "P" },
+        { Piece.VirginPawn, "P" },
+        { Piece.Rook, "R" },
+        { Piece.VirginRook, "R" },
+        { Piece.Knight, "N" },
+        { Piece.Bishop, "B" },
+        { Piece.Queen, "Q" },
+        { Piece.King, "K" },
+        { Piece.VirginKing, "K" },
     };
 
     public string ToFEN()
@@ -285,11 +308,11 @@ public partial class Engine
                 }
                 else if (whitePieces[pos] != Piece.None)
                 {
-                    sb.Append(pieceStrings[whitePieces[pos]].ToUpper());
+                    sb.Append(pieceStrings[whitePieces[pos]]);
                 }
                 else // if (blackPieces[pos] != Piece.None)
                 {
-                    sb.Append(pieceStrings[blackPieces[pos]]);
+                    sb.Append(pieceStrings[blackPieces[pos]].ToLower());
                 }
             }
             file += 1;
@@ -308,9 +331,9 @@ public partial class Engine
         }
 
         // who to move
-        sb.Append(' ').Append(moveCount%2==0? 'w' : 'b');
+        sb.Append(' ').Append(totalPly%2==0? 'w' : 'b');
 
-        // castling TODO: use shredder fen for this
+        // castling FIXME:
         sb.Append(" FUCKTHISGAME");
 
         // en passant
@@ -323,7 +346,7 @@ public partial class Engine
         sb.Append(' ').Append(prevMove.halfMoveClock);
 
         // full move clock
-        sb.Append(' ').Append(moveCount/2 + 1);
+        sb.Append(' ').Append(totalPly/2 + 1);
 
         return sb.ToString();
     }
@@ -333,9 +356,9 @@ public partial class Engine
         var sb = new StringBuilder();
         if (move.type == Move.Special.Castle)
         {
-            // TODO: change this into Ka1 or Kh1 (drop king on rook)
-            if (move.target > move.source) sb.Append('>');
-            else sb.Append('<');
+            // FIXME: castling from king to castle
+            // sb.Append('K');
+            // sb.Append((char)('a' + GetFile(move.target))).Append(GetRank(move.target));
         }
         else if (move.moved == Piece.Pawn || move.moved == Piece.VirginPawn)
         {

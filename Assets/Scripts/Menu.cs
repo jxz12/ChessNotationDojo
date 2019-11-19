@@ -263,6 +263,10 @@ public class Menu : MonoBehaviour
         else throw new Exception("wrong number of moves");
     }
 
+    public void SetExcludeSolved(bool exclude)
+    {
+        excludeSolved = exclude;
+    }
     public bool excludeSolved=true;
     Puzzle chosenPuzzle;
     void ShowRandomPuzzle(List<Puzzle> choices)

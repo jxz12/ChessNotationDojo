@@ -8,19 +8,24 @@ public class BoardAscii : MonoBehaviour
 {
     [SerializeField] GameObject squarePrefab;
     [SerializeField] Color lightSq, darkSq;
+    [SerializeField] Material lightPc, darkPc;
 
-    List<Text> squares;
+    List<TMPro.TextMeshProUGUI> squares;
 
-    void Update()
+    void LateUpdate()
     {
+        // var size = GetComponent<RectTransform>().sizeDelta;
+        // float width = Mathf.Min(size.y / nRanks, size.x / nFiles);
         var rect = GetComponent<RectTransform>().rect;
-        float width = rect.height / (float)nRanks;
+        float width = Mathf.Min(rect.width / nRanks, rect.height / nFiles);
         GetComponent<GridLayoutGroup>().cellSize = new Vector2(width, width);
+        GetComponent<GridLayoutGroup>().constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        GetComponent<GridLayoutGroup>().constraintCount = nFiles;
     }
 
     void InitSquares()
     {
-        squares = new List<Text>();
+        squares = new List<TMPro.TextMeshProUGUI>();
         for (int i=0; i<nRanks; i++)
         {
             for (int j=0; j<nFiles; j++)
@@ -31,7 +36,7 @@ public class BoardAscii : MonoBehaviour
                 square.transform.SetParent(transform, false);
                 square.transform.SetAsLastSibling();
 
-                squares.Add(square.GetComponentInChildren<Text>());
+                squares.Add(square.GetComponentInChildren<TMPro.TextMeshProUGUI>());
             }
         }
         // GetComponent<AspectRatioFitter>().aspectRatio = (float)nFiles/nRanks;
@@ -91,7 +96,7 @@ public class BoardAscii : MonoBehaviour
             else
             {
                 squares[pos].text = pieceSymbols[c];
-                squares[pos].color = char.IsUpper(c)? Color.white : Color.black;
+                squares[pos].fontMaterial = char.IsUpper(c)? lightPc : darkPc;
             }
         }
     }

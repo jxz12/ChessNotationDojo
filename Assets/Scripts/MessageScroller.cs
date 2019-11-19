@@ -17,7 +17,7 @@ public class MessageScroller : MonoBehaviour
     public void SetText(string text)
     {
         message.text = "   " + text;
-        Canvas.ForceUpdateCanvases();
+        // Canvas.ForceUpdateCanvases();
         if (textRT.rect.width <= maskRT.rect.width)
         {
             scrolling = false;

@@ -34,8 +34,8 @@ public class GameManager : MonoBehaviour
 
     // private BoardAscii board;
     // [SerializeField] BoardAscii boardPrefab;
-    // [SerializeField] BoardAscii board;
-    [SerializeField] Board3D board;
+    [SerializeField] BoardAscii board;
+    // [SerializeField] Board3D board;
     
     [SerializeField] GameObject inputPrefab;
     List<Button> ranks;
@@ -83,7 +83,7 @@ public class GameManager : MonoBehaviour
             char input = (char)('a'+i);
             var file = Instantiate(inputPrefab);
             file.GetComponent<Button>().onClick.AddListener(()=> InputChar(input));
-            file.GetComponentInChildren<Text>().text = file.name = input.ToString();
+            file.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = file.name = input.ToString();
             file.transform.SetParent(filesParent.transform, false);
             file.transform.SetAsLastSibling();
 
@@ -95,7 +95,7 @@ public class GameManager : MonoBehaviour
             char input = (char)('1'+i);
             var rank = Instantiate(inputPrefab);
             rank.GetComponent<Button>().onClick.AddListener(()=> InputChar(input));
-            rank.GetComponentInChildren<Text>().text = rank.name = input.ToString();
+            rank.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = rank.name = input.ToString();
             rank.transform.SetParent(ranksParent.transform, false);
             rank.transform.SetAsLastSibling();
 
@@ -103,7 +103,8 @@ public class GameManager : MonoBehaviour
         }
         print(FEN);
         print(thomas.ToFEN());
-        board.InitFEN(thomas.ToFEN());
+        // board.InitFEN(thomas.ToFEN());
+        board.SetFEN(thomas.ToFEN());
 
         candidate = "";
         allCandidates = new HashSet<string>(thomas.GetPGNs());
@@ -194,6 +195,7 @@ public class GameManager : MonoBehaviour
             else if (c == 'K') K.interactable = true;
             else if (c == 'x') x.interactable = true;
             else if (c == '=') eq.interactable = true;
+            else throw new Exception("Unexpected input " + c);
         }
     }
     void InputChar(char input)
@@ -244,7 +246,8 @@ public class GameManager : MonoBehaviour
         thomas.PlayPGN(move);
         undos.Push(move);
         redos.Clear();
-        board.PlayMoveUCI(thomas.GetLastUCI());
+        // board.PlayMoveUCI(thomas.GetLastUCI());
+        board.SetFEN(thomas.ToFEN());
         if (updateKeyboard)
         {
             allCandidates = new HashSet<string>(thomas.GetPGNs());
@@ -282,7 +285,8 @@ public class GameManager : MonoBehaviour
             candidate = sequence==null? "" : null;
 
             redos.Push(undos.Pop());
-            board.PlayMoveUCI(thomas.GetLastUCI());
+            // board.PlayMoveUCI(thomas.GetLastUCI());
+            board.SetFEN(thomas.ToFEN());
             ShowPossibleChars();
         }
         redoButton.interactable = true;
@@ -298,7 +302,8 @@ public class GameManager : MonoBehaviour
             candidate = sequence==null || redos.Count==0? "" : null;
 
             undos.Push(redo);
-            board.PlayMoveUCI(thomas.GetLastUCI());
+            // board.PlayMoveUCI(thomas.GetLastUCI());
+            board.SetFEN(thomas.ToFEN());
             ShowPossibleChars();
         }
         redoButton.interactable = redos.Count > 0;

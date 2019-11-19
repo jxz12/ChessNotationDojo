@@ -570,6 +570,8 @@ public partial class Engine
             // int castledRook = left? castledKing+1 : castledKing-1;
             // AddPiece(Piece.King, castledKing, move.whiteMove);
             // AddPiece(Piece.Rook, castledRook, move.whiteMove);
+
+            // FIXME: also update the halfmove clock
         }
         else if (move.promotion != Piece.None)
         {
