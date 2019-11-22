@@ -13,7 +13,7 @@ public partial class Engine
 
     private List<Piece> whitePieces;
     private List<Piece> blackPieces;
-    private Dictionary<int, HashSet<int>> castles; // rook->king
+    private Dictionary<int, HashSet<int>> castles; // king->rook
     // each 
 
     public int NRanks { get; private set; }
@@ -158,6 +158,13 @@ public partial class Engine
             else throw new Exception("unexpected character " + FEN[i] + " at " + i);
 
             i += 1;
+        }
+        foreach (int king in castles.Keys)
+        {
+            foreach (int rook in castles[king])
+            {
+                UnityEngine.Debug.Log(king+" "+rook);
+            }
         }
 
         // en passant

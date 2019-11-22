@@ -10,10 +10,10 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    [SerializeField] Button N, B, R, Q, K, x, eq;
+    [SerializeField] Button N, B, R, Q, K, x, eq, bksp;
     [SerializeField] HorizontalLayoutGroup ranksParent, filesParent;
     [SerializeField] Button undoButton, redoButton, quitButton, evalButton;
-    [SerializeField] Text titleText;
+    [SerializeField] TMPro.TextMeshProUGUI titleText;
     [SerializeField] MessageScroller quoteScroller;
 
     void Start()
@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
         K.onClick.AddListener(()=> InputChar('K'));
         x.onClick.AddListener(()=> InputChar('x'));
         eq.onClick.AddListener(()=> InputChar('='));
+        bksp.onClick.AddListener(()=> InputChar('\b'));
 
         undoButton.onClick.AddListener(()=> UndoMove());
         redoButton.onClick.AddListener(()=> RedoMove());
@@ -63,20 +64,20 @@ public class GameManager : MonoBehaviour
             board.FlipBoard(false);
         
         quitButton.GetComponent<Image>().color = Color.red;
-        StartGame(FEN);
+        StartGame(FEN, 2);
     }
-    public void StartFullGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+    public void StartFullGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1", int puush=2)
     {
         sequence = null;
-        StartGame(FEN);
+        StartGame(FEN, puush);
     }
 
-    void StartGame(string FEN)
+    void StartGame(string FEN, int puush)
     {
         if (thomas != null)
             ClearGame();
 
-        thomas = new Engine(FEN);
+        thomas = new Engine(FEN, puush);
         files = new List<Button>();
         for (int i=0; i<thomas.NFiles; i++)
         {
@@ -169,9 +170,12 @@ public class GameManager : MonoBehaviour
             b.interactable = false;
         }
         if (candidate == null)
+        {
             return;
+        }
 
         int idx = candidate.Length;
+        bksp.interactable = candidate.Length > 0;
         foreach (string move in allCandidates)
         {
             if (move.Length <= idx || move.Substring(0,idx) != candidate)
@@ -202,6 +206,11 @@ public class GameManager : MonoBehaviour
     {
         if (thomas == null)
             return;
+        if (input == '\b')
+        {
+            UndoChar();
+            return;
+        }
 
         candidate += input;
         if (allCandidates.Contains(candidate))
@@ -214,7 +223,7 @@ public class GameManager : MonoBehaviour
                     if (sequence.Count > 0)
                     {
                         StartCoroutine(WaitThenPlayMove(sequence.Dequeue(), 1));
-                        StartCoroutine(DisplayTitleForTime("Correct!", 1, Color.green, FontStyle.Bold));
+                        StartCoroutine(DisplayTitleForTime("Correct!", 1, Color.green, TMPro.FontStyles.Bold));
                     }
                     else
                     {
@@ -227,7 +236,7 @@ public class GameManager : MonoBehaviour
                 else
                 {
                     // TODO: show escaping variation
-                    StartCoroutine(DisplayTitleForTime("WRONG", 1, Color.red, FontStyle.Bold));
+                    StartCoroutine(DisplayTitleForTime("WRONG", 1, Color.red, TMPro.FontStyles.Bold));
                     candidate = "";
                 }
             }
@@ -262,11 +271,11 @@ public class GameManager : MonoBehaviour
         yield return new WaitForSeconds(seconds);
         PlayMove(move);
     }
-    IEnumerator DisplayTitleForTime(string message, float seconds, Color col, FontStyle style)
+    IEnumerator DisplayTitleForTime(string message, float seconds, Color col, TMPro.FontStyles style)
     {
         string before = titleText.text;
         Color colBefore = titleText.color;
-        FontStyle styBefore = titleText.fontStyle;
+        TMPro.FontStyles styBefore = titleText.fontStyle;
 
         titleText.text = message;
         titleText.color = col;
@@ -309,24 +318,6 @@ public class GameManager : MonoBehaviour
         redoButton.interactable = redos.Count > 0;
         undoButton.interactable = true;
     }
-    // string MovesToString()
-    // {
-    //     var sb = new StringBuilder();
-    //     int i=0;
-    //     foreach (string move in moves)
-    //     {
-    //         if (i%2 == 1)
-    //         {
-    //             sb.Append(' ').Append(move);
-    //         }
-    //         else
-    //         {
-    //             if (i != 0) sb.Append(';');
-    //             sb.Append(move);
-    //         }
-    //     }
-    //     return sb.ToString();
-    // }
     void UndoChar()
     {
         if (candidate.Length == 0)

@@ -12,8 +12,8 @@ using System.Text.RegularExpressions;
 public class Menu : MonoBehaviour
 {
     [SerializeField] GameManager gm;
-    [SerializeField] TextAsset m8n2, m8n3, m8n4, quotes;
-    [SerializeField] Text progress2, progress3, progress4;
+    [SerializeField] TextAsset input2, input3, input4, quotes;
+    [SerializeField] TMPro.TextMeshProUGUI progress2, progress3, progress4;
     [SerializeField] BoardAscii board;
 
     public void StartFullGame()
@@ -26,17 +26,15 @@ public class Menu : MonoBehaviour
     }
     public void StartPeasantsRevolt()
     {
-        // "1nn1knn1/4p3/8/8/8/8/PPPPPPPP/4K3 w - -"
+        gm.StartFullGame("1nn1knn1/4p3/8/8/8/8/PPPPPPPP/4K3 w - - 0 1");
     }
     public void StartHordeChess()
     {
-        // "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w AH -"
-        // puush=0
+        gm.StartFullGame("ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w AH - 0 1", 1);
     }
     public void StartDoubleChess()
     {
-        throw new Exception("fuck this and fuck castling");
-        // "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w AHGPahgp - 0 1"
+        gm.StartFullGame("rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w AHGPahgp - 0 1", 5);
     }
     public void StartChess960()
     {
@@ -68,7 +66,8 @@ public class Menu : MonoBehaviour
           .Append((char)('a'+leftRook))
           .Append((char)('a'+rightRook))
           .Append(" -");
-        FindObjectOfType<BoardAscii>().SetFEN(sb.ToString());
+
+        gm.StartFullGame(sb.ToString());
     }
     private int XthEmptySquare960(int x, StringBuilder sb)
     {
@@ -86,15 +85,15 @@ public class Menu : MonoBehaviour
     }
     public void StartMicroChess()
     {
-        // "knbr/p3/4/3P/RBNK w Qk -"
+        gm.StartFullGame("knbr/p3/4/3P/RBNK w Da - 0 1", 1);
     }
     public void StartDemiChess()
     {
-        // "kbnr/pppp/4/4/4/4/pppp/KBNR w KK -"
+        gm.StartFullGame("kbnr/pppp/4/4/4/4/pppp/KBNR w Aa - 0 1", 2);
     }
     public void StartBabyChess()
     {
-        // "kqbnr/ppppp/5/PPPPP/RNBQK w 
+        gm.StartFullGame("kqbnr/ppppp/5/PPPPP/RNBQK w - - 0 1", 1);
     }
 
     public class Puzzle
@@ -107,9 +106,9 @@ public class Menu : MonoBehaviour
     List<Puzzle> puzzles2, puzzles3, puzzles4;
     void Awake()
     {
-        puzzles2 = InitPuzzles(m8n2.text, Application.persistentDataPath+"/m8n2.gd");
-        puzzles3 = InitPuzzles(m8n3.text, Application.persistentDataPath+"/m8n3.gd");
-        puzzles4 = InitPuzzles(m8n4.text, Application.persistentDataPath+"/m8n4.gd");
+        puzzles2 = InitPuzzles(input2.text, Application.persistentDataPath+"/m8n2.gd");
+        puzzles3 = InitPuzzles(input3.text, Application.persistentDataPath+"/m8n3.gd");
+        puzzles4 = InitPuzzles(input4.text, Application.persistentDataPath+"/m8n4.gd");
         ShowAllProgress();
 
         quotesList = LoadQuotes(quotes.text);
@@ -220,7 +219,7 @@ public class Menu : MonoBehaviour
         ShowProgress(puzzles3, progress3);
         ShowProgress(puzzles4, progress4);
     }
-    void ShowProgress(List<Puzzle> puzzles, Text progress)
+    void ShowProgress(List<Puzzle> puzzles, TMPro.TextMeshProUGUI progress)
     {
         int total=0, solved=0;
         foreach (Puzzle p in puzzles)

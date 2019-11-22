@@ -4,7 +4,7 @@ using UnityEngine.UI;
 public class MessageScroller : MonoBehaviour
 {
     [SerializeField] float scrollSpeed;
-    [SerializeField] Text message;
+    [SerializeField] TMPro.TextMeshProUGUI message;
 
     RectTransform maskRT, textRT;
     bool scrolling = false;
