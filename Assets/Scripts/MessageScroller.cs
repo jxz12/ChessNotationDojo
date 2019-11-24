@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 public class MessageScroller : MonoBehaviour
 {
@@ -13,7 +12,7 @@ public class MessageScroller : MonoBehaviour
         maskRT = GetComponent<RectTransform>();
         textRT = message.GetComponent<RectTransform>();
     }
-    string separator = "                            ";
+    string separator = "                      ";
     public void SetText(string text)
     {
         message.text = "   " + text;

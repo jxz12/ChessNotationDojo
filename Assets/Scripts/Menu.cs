@@ -284,11 +284,12 @@ public class Menu : MonoBehaviour
         {
             unsolved = choices.Count;
         }
+
         if (unsolved == 0)
         {
             unsolved = choices.Count; // TODO: disable button from check at start
         }
-        int choice = UnityEngine.Random.Range(0,unsolved);
+        int choice = UnityEngine.Random.Range(0, unsolved);
         int counter = 0;
         chosenPuzzle = null;
         foreach (Puzzle p in choices)
@@ -383,6 +384,6 @@ public class Menu : MonoBehaviour
     void ChooseQuote()
     {
         var chosenQuote = quotesList[UnityEngine.Random.Range(0, quotesList.Count)];
-        gm.SetQuote("\"" + chosenQuote.Item2 + "\"—" + chosenQuote.Item1);
+        gm.SetQuote("\"" + chosenQuote.Item2 + "''—" + chosenQuote.Item1);
     }
 }

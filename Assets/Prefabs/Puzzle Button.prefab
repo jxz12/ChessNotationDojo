@@ -172,7 +172,7 @@ MonoBehaviour:
   m_fontSize: 71.76
   m_fontSizeBase: 71.76
   m_fontWeight: 400
-  m_enableAutoSizing: 0
+  m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 1
@@ -207,7 +207,7 @@ MonoBehaviour:
   m_firstVisibleCharacter: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 181.88545, z: 0, w: 32.377533}
+  m_margin: {x: 0, y: 175.05508, z: 0, w: 17.008898}
   m_textInfo:
     textComponent: {fileID: 1935780435791301073}
     characterCount: 3
