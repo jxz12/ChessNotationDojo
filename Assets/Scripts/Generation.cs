@@ -201,23 +201,31 @@ public partial class Engine
                     foreach (Move m in PromotionsIfPossible(push))
                         yield return m;
                     
-                    // FIXME:
-                    // // puush
-                    // if (allies[pos] == Piece.VirginPawn &&
-                    //     !Occupied(pos+2*forward))
-                    // {
-                    //     var puush = new Move() {
-                    //         whiteMove = whiteToMove,
-                    //         source = pos,
-                    //         target = pos + 2*forward,
-                    //         type = Move.Special.Normal,
-                    //         moved = Piece.VirginPawn,
-                    //         promotion = Piece.Pawn,
-                    //         previous = current
-                    //     };
-                    //     foreach (Move m in PromotionsIfPossible(puush))
-                    //         yield return m;
-                    // }
+                    // puush
+                    if (allies[pos] == Piece.VirginPawn)
+                    {
+                        for (int steps=2; steps<=puush; steps++)
+                        {
+                            if (!Occupied(pos+steps*forward))
+                            {
+                                push = new Move() {
+                                    whiteMove = whiteToMove,
+                                    source = pos,
+                                    target = pos + steps*forward,
+                                    type = Move.Special.Normal,
+                                    moved = Piece.VirginPawn,
+                                    promotion = Piece.Pawn,
+                                    previous = current
+                                };
+                                foreach (Move m in PromotionsIfPossible(push))
+                                    yield return m;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
                 }
                 
                 // captures
@@ -227,7 +235,7 @@ public partial class Engine
                     // pawns cannot move to an attacked square unless it's a capture
                     if (enemies[attack] != Piece.None)
                     {
-                        var pish = new Move() {
+                        var pysh = new Move() {
                             whiteMove = whiteToMove,
                             source = pos,
                             target = attack,
@@ -237,7 +245,7 @@ public partial class Engine
                             promotion = Piece.Pawn,
                             previous = current
                         };
-                        foreach (Move m in PromotionsIfPossible(pish))
+                        foreach (Move m in PromotionsIfPossible(pysh))
                             yield return m;
                     }
                     else // virtual attacks for castle check

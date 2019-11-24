@@ -64,20 +64,20 @@ public class GameManager : MonoBehaviour
             board.FlipBoard(false);
         
         quitButton.GetComponent<Image>().color = Color.red;
-        StartGame(FEN, 2);
+        StartGame(FEN, 2, false);
     }
-    public void StartFullGame(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1", int puush=2)
+    public void StartFullGame(string FEN, int puush, bool castle960)
     {
         sequence = null;
-        StartGame(FEN, puush);
+        StartGame(FEN, puush, castle960);
     }
 
-    void StartGame(string FEN, int puush)
+    void StartGame(string FEN, int puush, bool castle960)
     {
         if (thomas != null)
             ClearGame();
 
-        thomas = new Engine(FEN, puush);
+        thomas = new Engine(FEN, puush, castle960);
         files = new List<Button>();
         for (int i=0; i<thomas.NFiles; i++)
         {
@@ -102,10 +102,7 @@ public class GameManager : MonoBehaviour
 
             ranks.Add(rank.GetComponent<Button>());
         }
-        print(FEN);
-        print(thomas.ToFEN());
-        // board.InitFEN(thomas.ToFEN());
-        board.SetFEN(thomas.ToFEN());
+        board.FEN = thomas.ToFEN();
 
         candidate = "";
         allCandidates = new HashSet<string>(thomas.GetPGNs());
@@ -256,7 +253,7 @@ public class GameManager : MonoBehaviour
         undos.Push(move);
         redos.Clear();
         // board.PlayMoveUCI(thomas.GetLastUCI());
-        board.SetFEN(thomas.ToFEN());
+        board.FEN = thomas.ToFEN();
         if (updateKeyboard)
         {
             allCandidates = new HashSet<string>(thomas.GetPGNs());
@@ -295,7 +292,7 @@ public class GameManager : MonoBehaviour
 
             redos.Push(undos.Pop());
             // board.PlayMoveUCI(thomas.GetLastUCI());
-            board.SetFEN(thomas.ToFEN());
+            board.FEN = thomas.ToFEN();
             ShowPossibleChars();
         }
         redoButton.interactable = true;
@@ -312,7 +309,7 @@ public class GameManager : MonoBehaviour
 
             undos.Push(redo);
             // board.PlayMoveUCI(thomas.GetLastUCI());
-            board.SetFEN(thomas.ToFEN());
+            board.FEN = thomas.ToFEN();
             ShowPossibleChars();
         }
         redoButton.interactable = redos.Count > 0;
@@ -326,8 +323,8 @@ public class GameManager : MonoBehaviour
         candidate = candidate.Substring(0, candidate.Length-1);
         ShowPossibleChars();
     }
-    void Update()
-    {
+    // void Update()
+    // {
         // if (Input.GetKeyDown(KeyCode.LeftArrow)) UndoMove();
         // else if (Input.GetKeyDown(KeyCode.RightArrow)) RedoMove();
         // else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
@@ -361,7 +358,5 @@ public class GameManager : MonoBehaviour
         // else if (Input.GetKeyDown(KeyCode.Alpha6) && ranks[5].interactable) InputChar('6');
         // else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
         // else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
-        // TODO: make the above work for different numbers of ranks and files
-    }
-
+    // }
 }

@@ -23,6 +23,7 @@ public class BoardAscii : MonoBehaviour
         GetComponent<GridLayoutGroup>().constraintCount = nFiles;
     }
 
+    private int nRanks, nFiles;
     void InitSquares()
     {
         squares = new List<TMPro.TextMeshProUGUI>();
@@ -41,62 +42,65 @@ public class BoardAscii : MonoBehaviour
         }
         // GetComponent<AspectRatioFitter>().aspectRatio = (float)nFiles/nRanks;
     }
-    private int nRanks, nFiles;
-    public void SetFEN(string FEN)
-    {
-        int nRanksNew = FEN.Count(c=>c=='/') + 1;
-        int nFilesNew = 0;
-        foreach (char c in FEN)
-        {
-            if (c == '/')
-                break;
-            else if (c >= '1' && c <= '9')
-                nFilesNew += c - '0';
-            else
-                nFilesNew += 1;
-        }
-        if (nRanksNew != nRanks || nFilesNew != nRanks)
-        {
-            nRanks = nRanksNew;
-            nFiles = nFilesNew;
-            foreach (Transform child in transform)
+    private string fen;
+    public string FEN {
+        get { return fen; }
+        set {
+            fen = value;
+            int nRanksNew = fen.Count(c=>c=='/') + 1;
+            int nFilesNew = 0;
+            foreach (char c in fen)
             {
-                GameObject.Destroy(child.gameObject);
+                if (c == '/')
+                    break;
+                else if (c >= '1' && c <= '9')
+                    nFilesNew += c - '0';
+                else
+                    nFilesNew += 1;
             }
-            InitSquares();
-        }
-
-        int rank = nRanks-1;
-        int file = -1;
-        foreach (char c in FEN)
-        {
-            file += 1;
-            int pos = rank * nFiles + file;
-            if (c == ' ')
+            if (nRanksNew != nRanks || nFilesNew != nRanks)
             {
-                break;
-            }
-            if (c == '/')
-            {
-                if (file != nFiles)
-                    throw new Exception("wrong number of squares in FEN rank " + rank);
-
-                rank -= 1;
-                file = -1;
-            }
-            else if (c >= '1' && c <= '9')
-            {
-                int newFile = file + (c - '0');
-                for (int j=0; j<newFile-file; j++)
+                nRanks = nRanksNew;
+                nFiles = nFilesNew;
+                foreach (Transform child in transform)
                 {
-                    squares[pos+j].text = "";
+                    Destroy(child.gameObject);
                 }
-                file = newFile - 1; // -1 because file will be incremented regardless
+                InitSquares();
             }
-            else
+
+            int rank = nRanks-1;
+            int file = -1;
+            foreach (char c in fen)
             {
-                squares[pos].text = pieceSymbols[c];
-                squares[pos].fontMaterial = char.IsUpper(c)? lightPc : darkPc;
+                file += 1;
+                int pos = rank * nFiles + file;
+                if (c == ' ')
+                {
+                    break;
+                }
+                if (c == '/')
+                {
+                    if (file != nFiles)
+                        throw new Exception("wrong number of squares in FEN rank " + rank);
+
+                    rank -= 1;
+                    file = -1;
+                }
+                else if (c >= '1' && c <= '9')
+                {
+                    int newFile = file + (c - '0');
+                    for (int j=0; j<newFile-file; j++)
+                    {
+                        squares[pos+j].text = "";
+                    }
+                    file = newFile - 1; // -1 because file will be incremented regardless
+                }
+                else
+                {
+                    squares[pos].text = pieceSymbols[c];
+                    squares[pos].fontMaterial = char.IsUpper(c)? lightPc : darkPc;
+                }
             }
         }
     }
@@ -124,6 +128,16 @@ public class BoardAscii : MonoBehaviour
         {
             GetComponent<GridLayoutGroup>().startCorner = GridLayoutGroup.Corner.LowerLeft;
         }
+    }
+    public void Clear()
+    {
+        foreach (Transform child in transform)
+        {
+            Destroy(child.gameObject);
+        }
+        squares?.Clear();
+        nFiles = nRanks = 0;
+        fen = "";
     }
 
 }

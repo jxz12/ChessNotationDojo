@@ -10,14 +10,9 @@ public partial class Engine
 {
     private enum Piece { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
                          VirginPawn, VirginRook, VirginKing }; // for castling, en passant etc.
-
     private List<Piece> whitePieces;
     private List<Piece> blackPieces;
     private Dictionary<int, HashSet<int>> castles; // king->rook
-    // each 
-
-    public int NRanks { get; private set; }
-    public int NFiles { get; private set; }
 
     // a class to store all the information needed for a move
     // a Move plus the board state is all the info needed for move generation
@@ -36,9 +31,21 @@ public partial class Engine
         public int halfMoveClock = 0;
     }
 
+    // board dimensions
+    public int NRanks { get; private set; }
+    public int NFiles { get; private set; }
+    
     // current to evaluate
     private Move prevMove;
     private int totalPly;
+
+    // Chess is ugly, here are some examples:
+    //   castling is only on the home rank
+    //   where the fuck does the king go when castling?
+    //   double pawn push is only from home rank +- 1
+    //   what the fuck happens for en passant?
+    private int puush;
+    private bool castle960;
 
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1",
                   int puush=2, bool castle960=false)
@@ -195,8 +202,10 @@ public partial class Engine
         prevMove.halfMoveClock = int.Parse(FEN.Substring(i, len));
 
         i += len + 1;
-        totalPly = int.Parse(FEN.Substring(i)) + (prevMove.whiteMove? 1:0);
-        // don't care about move count
+        totalPly = 2*int.Parse(FEN.Substring(i)) - (prevMove.whiteMove? 1:0);
+
+        this.puush = puush;
+        this.castle960 = castle960;
 
         legalMoves = FindLegalMoves(prevMove);
     }
@@ -242,7 +251,7 @@ public partial class Engine
     {
         return legalMoves.Keys;
     }
-    public string GetLastUCI() // not real UCI because it isn't smart enough for other boards
+    public string GetLastUCI()
     {
         var sb = new StringBuilder();
         sb.Append((char)('a'+GetFile(prevMove.source)));
@@ -250,10 +259,9 @@ public partial class Engine
         sb.Append((char)('a'+GetFile(prevMove.target)));
         sb.Append(GetRank(prevMove.target));
 
-        // FIXME:
+        // // fuck chess
         // if (prevMove.type == Move.Special.Castle)
         //     sb.Append(fuck castling);
-        // FIXME:
         // if (prevMove.type == Move.Special.EnPassant)
         //     sb.Append("x").Append();
         if (prevMove.promotion != Piece.None)
@@ -361,13 +369,7 @@ public partial class Engine
     private string ToPGN(Move move)
     {
         var sb = new StringBuilder();
-        if (move.type == Move.Special.Castle)
-        {
-            // FIXME: castling from king to castle
-            // sb.Append('K');
-            // sb.Append((char)('a' + GetFile(move.target))).Append(GetRank(move.target));
-        }
-        else if (move.moved == Piece.Pawn || move.moved == Piece.VirginPawn)
+        if (move.moved == Piece.Pawn || move.moved == Piece.VirginPawn)
         {
             sb.Append((char)('a'+(move.source%NFiles)));
             if (move.captured != Piece.None)

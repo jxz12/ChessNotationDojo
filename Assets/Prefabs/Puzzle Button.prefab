@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3368468694202824661}
   - component: {fileID: 8184751055005011340}
   m_Layer: 0
-  m_Name: TMP SubMeshUI [Hey Comic SDF Material + LiberationSans SDF Atlas]
+  m_Name: TMP SubMeshUI [FreeSerif SDF Material + LiberationSans SDF Atlas]
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -70,7 +70,7 @@ MonoBehaviour:
   m_material: {fileID: 0}
   m_sharedMaterial: {fileID: 0}
   m_isDefaultMaterial: 0
-  m_padding: 2.6
+  m_padding: 2.942
   m_canvasRenderer: {fileID: 3368468694202824661}
   m_TextComponent: {fileID: 1935780435791301073}
   m_materialReferenceIndex: 1
@@ -142,8 +142,8 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: 0/0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: ab5d7b87433744860862136b4007dcb3, type: 2}
-  m_sharedMaterial: {fileID: 1094486507866562479, guid: ab5d7b87433744860862136b4007dcb3,
+  m_fontAsset: {fileID: 11400000, guid: 9238a163b5f614208bd045c445361cec, type: 2}
+  m_sharedMaterial: {fileID: -5635563849177821932, guid: 9f6bb7d68fe304c41ab3df79ec126851,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -175,7 +175,7 @@ MonoBehaviour:
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_textAlignment: 514
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -186,7 +186,7 @@ MonoBehaviour:
   m_enableWordWrapping: 1
   m_wordWrappingRatios: 0.4
   m_overflowMode: 0
-  m_firstOverflowCharacterIndex: 1
+  m_firstOverflowCharacterIndex: -1
   m_linkedTextComponent: {fileID: 0}
   m_isLinkedTextComponent: 0
   m_isTextTruncated: 0
@@ -246,7 +246,7 @@ GameObject:
   - component: {fileID: 4641449955527668290}
   - component: {fileID: 4641449955527668293}
   m_Layer: 0
-  m_Name: m8n
+  m_Name: Puzzle Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -444,7 +444,7 @@ MonoBehaviour:
       Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
   m_text: Mate in 2
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: ab5d7b87433744860862136b4007dcb3, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 9238a163b5f614208bd045c445361cec, type: 2}
   m_sharedMaterial: {fileID: 1094486507866562479, guid: ab5d7b87433744860862136b4007dcb3,
     type: 2}
   m_fontSharedMaterials: []
