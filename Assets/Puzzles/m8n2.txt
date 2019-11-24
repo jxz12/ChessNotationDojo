@@ -6,7 +6,7 @@ you might want to rate the puzzle and the solver.
 Bill Harvey 
 
 Henry Buckle vs NN, London, 1840
-r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w KQkq - 1 0
+r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w AHah - 1 0
 1. Nf6+ gxf6 2. Bxf7# 
 
 
@@ -16,7 +16,7 @@ Louis Paulsen vs Blachy, New York, 1857
 
 
 Paul Morphy vs Duke Isouard, Paris, 1858
-4kb1r/p2n1ppp/4q3/4p1B1/4P3/1Q6/PPP2PPP/2KR4 w k - 1 0
+4kb1r/p2n1ppp/4q3/4p1B1/4P3/1Q6/PPP2PPP/2KR4 w a - 1 0
 1. Qb8+ Nxb8 2. Rd8# 
 
 
@@ -196,7 +196,7 @@ Monterinas vs Max Euwe, Amsterdam, 1927
 
 
 Ilya Rabinovich vs Grigori Levenfish, Moscow, 1927
-rn2kb1r/ppp1pppp/8/8/4q3/3P1N1b/PPP1BPnP/RNBQ1K1R b kq - 0 1
+rn2kb1r/ppp1pppp/8/8/4q3/3P1N1b/PPP1BPnP/RNBQ1K1R b ah - 0 1
 1... Nh4+ 2. Ke1 Nxf3#
 
 
@@ -256,7 +256,7 @@ r4R2/1b2n1pp/p2Np1k1/1pn5/4pP1P/8/PPP1B1P1/2K4R w - - 1 0
 
 
 Heinz Helms vs Oscar Tenner, New York, 1942
-r1bqk2r/bppp1ppp/8/PB2N3/3n4/B7/2PPQnPP/RN2K2R w KQkq - 1 0
+r1bqk2r/bppp1ppp/8/PB2N3/3n4/B7/2PPQnPP/RN2K2R w AHah - 1 0
 1. Nxd7+ Nxe2 2. Nf6# 
 
 
@@ -536,7 +536,7 @@ Josh Waitzkin vs Luis Hoyos-Millan, New York, 1992
 
 
 Esa Auvinen vs Harri Hytonen, Helsinki, 1993
-rnb1k2r/pp3ppp/1qp2B2/2bPp3/4P3/2N5/PPP3PP/R2QKBNR b KQkq - 0 1
+rnb1k2r/pp3ppp/1qp2B2/2bPp3/4P3/2N5/PPP3PP/R2QKBNR b AHah - 0 1
 1... Bf2+ 2. Kd2 Qe3#
 
 
@@ -591,17 +591,17 @@ Claudia Amura vs Carlos Bulcourf, Villa Ballester, 1996
 
 
 Ronald Bancod vs Richard Forster, Weilburg, 1996
-r1b1k2r/1p2bppp/p3q3/1p2p1B1/8/3Q1N2/PPP2PPP/3R1RK1 w kq - 1 0
+r1b1k2r/1p2bppp/p3q3/1p2p1B1/8/3Q1N2/PPP2PPP/3R1RK1 w ah - 1 0
 1. Qd8+ Bxd8 2. Rxd8# 
 
 
 Ferenc Berkes vs Diana Nemeth, Hungary, 1996
-rn2k2r/pp2b2p/2p1Q1p1/5B2/1q3B2/8/PPP3PP/3RR2K w kq - 1 0
+rn2k2r/pp2b2p/2p1Q1p1/5B2/1q3B2/8/PPP3PP/3RR2K w ah - 1 0
 1. Rd8+ Kxd8 2. Qc8#
 
 
 Georgios Efthimiou vs V Siametis, Mitilini, 1996
-r1b1k2r/pp3ppp/2n1p3/6B1/2p1q3/Q7/PP2PPPP/3RKB1R w Kkq - 1 0
+r1b1k2r/pp3ppp/2n1p3/6B1/2p1q3/Q7/PP2PPPP/3RKB1R w Aah - 1 0
 1. Rd8+ Nxd8 2. Qe7#
 
 
@@ -631,7 +631,7 @@ Alexander Riazantsev vs Artem Iljin, St. Petersburg, 1997
 
 
 Jonathan Rowson vs John Richardson, Staffordshire, 1997
-3rk2r/p1qn1pp1/1p2pb1p/7P/2Pp4/B1P1QP2/P1B1KP2/3R3R w k - 1 0
+3rk2r/p1qn1pp1/1p2pb1p/7P/2Pp4/B1P1QP2/P1B1KP2/3R3R w a - 1 0
 1. Qxe6+ fxe6 2. Bg6# 
 
 
@@ -661,7 +661,7 @@ Etienne Bacrot vs Laurent Fressinet, Besancon, 1999
 
 
 Ludwig Deutsch vs B Zambo, Zalakaros, 1999
-r1bq1rkb/ppp2n1p/5n2/4p1NN/5pQ1/1BP5/PP3PPP/R1B1K2R w KQ - 1 0
+r1bq1rkb/ppp2n1p/5n2/4p1NN/5pQ1/1BP5/PP3PPP/R1B1K2R w AH - 1 0
 1. Nxf7+ Nxg4 2. Nh6#
 
 
@@ -716,7 +716,7 @@ r5q1/pp1b1kr1/2p2p2/2Q5/2PpB3/1P4NP/P4P2/4RK2 w - - 1 0
 
 
 Surya Ganguly vs M R Venkatesh, Calicut, 2003
-2r1kb1r/p2b1ppp/3p4/Q2Np1B1/4P2P/8/PP4P1/4KB1n w k - 1 0
+2r1kb1r/p2b1ppp/3p4/Q2Np1B1/4P2P/8/PP4P1/4KB1n w a - 1 0
 1. Qd8+ Rxd8 2. Nc7# 
 
 
@@ -1072,7 +1072,7 @@ Sasa Martinovic vs Vitezslav Rasik, Meissen, 6/5/2013
 
 Black Mates in 2
 Alexander Areshchenko vs Sergei Zhigalko, Kiev, 6/6/2013
-r3k2r/p3bpp1/2q1p1b1/1ppPP1B1/3n3P/5NR1/PP2NP2/K1QR4 b kq - 0 1
+r3k2r/p3bpp1/2q1p1b1/1ppPP1B1/3n3P/5NR1/PP2NP2/K1QR4 b ah - 0 1
 1... Nb3+ 2. axb3 Qa6#
 
 Black Mates in 2.

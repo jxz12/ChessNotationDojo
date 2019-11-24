@@ -7,12 +7,12 @@ Bill Harvey
 
 
 Madame de Remusat vs Napoleon I, Paris, 1802
-r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b kq - 0 1
+r1b1kb1r/pppp1ppp/5q2/4n3/3KP3/2N3PN/PPP4P/R1BQ1B1R b ah - 0 1
 1... Bc5+ 2. Kxc5 Qb6+ 3. Kd5 Qd6#
 
 
 William Evans vs Alexander MacDonnell, London, 1826
-r3k2r/ppp2Npp/1b5n/4p2b/2B1P2q/BQP2P2/P5PP/RN5K w kq - 1 0
+r3k2r/ppp2Npp/1b5n/4p2b/2B1P2q/BQP2P2/P5PP/RN5K w ah - 1 0
 1. Bb5+ c6 2. Qe6+ Qe7 3. Qxe7# 
 
 
@@ -242,7 +242,7 @@ r5r1/p1q2p1k/1p1R2pB/3pP3/6bQ/2p5/P1P1NPPP/6K1 w - - 1 0
 
 
 K Kunitz vs B Salamon, Tangier, 1907
-r2qkbnr/pppb2pp/5pn1/3Pp3/4Q3/2PBBN2/PP4PP/RN2K2R w KQkq - 1 0
+r2qkbnr/pppb2pp/5pn1/3Pp3/4Q3/2PBBN2/PP4PP/RN2K2R w AHah - 1 0
 1. Qxg6+ hxg6 2. Bxg6+ Ke7 3. Bc5# 
 
 
@@ -292,7 +292,7 @@ r1b2r2/pp3Npk/6np/8/2q1N3/4Q3/PPP2RPP/6K1 w - - 1 0
 
 
 Belitzmann vs Akiba Rubinstein, Warsaw, 1917
-r3k2r/pbp2pp1/3b1n2/1p6/3P3p/1B2N1Pq/PP1PQP1P/R1B1NRK1 b kq - 0 1
+r3k2r/pbp2pp1/3b1n2/1p6/3P3p/1B2N1Pq/PP1PQP1P/R1B1NRK1 b ah - 0 1
 1... Qxh2+ 2. Kxh2 hxg3+ 3. Kg1 Rh1# 
 
 
@@ -667,7 +667,7 @@ rq2r1k1/1b3pp1/p3p1n1/1p4BQ/8/7R/PP3PPP/4R1K1 w - - 1 0
 
 
 Erhard Bernhoeft vs E Svedenloef, corr., 1964
-r3kb1r/1b1n2pp/pq1pN3/1p1Q2B1/4P3/8/PPP2PPP/R4RK1 w kq - 1 0
+r3kb1r/1b1n2pp/pq1pN3/1p1Q2B1/4P3/8/PPP2PPP/R4RK1 w ah - 1 0
 1. Nc7+ Qxc7 2. Qe6+ Be7 3. Qxe7#
 
 
@@ -747,7 +747,7 @@ rk5r/2p3pp/p1p5/4N3/4P3/2q4P/P4PP1/R2Q2K1 w - - 1 0
 
 
 Georgy Bastrikov vs Izrail Kogan, Minsk, 1971
-r3kb1r/1b4p1/pq2pn1p/1N2p3/8/3B2Q1/PPP2PPP/2KRR3 w kq - 1 0
+r3kb1r/1b4p1/pq2pn1p/1N2p3/8/3B2Q1/PPP2PPP/2KRR3 w ah - 1 0
 1. Bg6+ Ke7 2. Qa3+ Qd6 3. Qxd6#
 
 
@@ -802,7 +802,7 @@ rn1q3r/pp2kppp/3Np3/2b1n3/3N2Q1/3B4/PP4PP/R1B2RK1 w - - 1 0
 
 
 David Gedult vs Tisserand, Vittel, 1974
-rn2k2r/ppp1bppp/5p2/3N1b2/1q6/5p2/PPP1QPPP/2KR1B1R w kq - 1 0
+rn2k2r/ppp1bppp/5p2/3N1b2/1q6/5p2/PPP1QPPP/2KR1B1R w ah - 1 0
 1. Nxc7+ Kf8 2. Rd8+ Bxd8 3. Qe8# 
 
 
@@ -812,7 +812,7 @@ Michael Haygarth vs Gerald Bennett, England, 1974
 
 
 G Lachmann vs Walther, corr., 1974
-3rk2r/Qp1b1pp1/3q3p/2p5/2P1N3/P3PN2/1P3PPP/2n1KB1R b Kk - 0 1
+3rk2r/Qp1b1pp1/3q3p/2p5/2P1N3/P3PN2/1P3PPP/2n1KB1R b Aa - 0 1
 1... Qd1+ 2. Kxd1 Ba4+ 3. Kxc1 Rd1# 
 
 
@@ -1112,7 +1112,7 @@ b4rk1/p4p2/1p4Pq/4p3/8/P1N2PQ1/BP3PK1/8 w - - 1 0
 
 
 J Ciprian vs Bernd Kievelitz, corr, 1990
-1rb1kb1r/5pp1/p4q1p/3Q4/5P2/8/PPP3PP/2KR1B1R w k - 1 0
+1rb1kb1r/5pp1/p4q1p/3Q4/5P2/8/PPP3PP/2KR1B1R w a - 1 0
 1. Bb5+ axb5 2. Rhe1+ Be7 3. Qd8#
 
 
@@ -1197,7 +1197,7 @@ Alexander Grischuk vs G Tatarliev, Duisburg, 1992
 
 
 Kaido Kulaots vs Balazs Szuk, Duisburg, 1992
-r3k2r/6pp/p1b1Pp2/q1bN1Q2/8/1p6/PPP3PP/2KR1B1R w kq - 0 1
+r3k2r/6pp/p1b1Pp2/q1bN1Q2/8/1p6/PPP3PP/2KR1B1R w ah - 0 1
 1. Nxf6+ gxf6 2. Qh5+ Ke7 3. Qf7#
 
 
@@ -1422,7 +1422,7 @@ Ljubomir Ljubojevic vs Anatoly Karpov, Monte Carlo, 1997
 
 
 Arn Neuenschwander vs Oskar Nadenau, Bad Wildbad, 1997
-r1bq2r1/ppnn1pk1/2p3pR/2B1p1P1/2P1P1P1/2N2P2/PP1Q4/R3KB2 w Q - 1 0
+r1bq2r1/ppnn1pk1/2p3pR/2B1p1P1/2P1P1P1/2N2P2/PP1Q4/R3KB2 w H - 1 0
 1. Rh7+ Kxh7 2. Qh2+ Kg7 3. Qh6# 
 
 
@@ -1437,7 +1437,7 @@ r4r1k/5p2/3P4/4pP1N/b5P1/b1p2B2/p1P1R2P/K2R4 b - - 0 1
 
 
 Le Thanh Tu vs Nguyen Thi Thanh An, Dong Thap, 1997
-r2q1rk1/pp3pp1/2n5/3p1b2/2P4R/2B1Q1P1/PP2P3/R3K3 w Q - 1 0
+r2q1rk1/pp3pp1/2n5/3p1b2/2P4R/2B1Q1P1/PP2P3/R3K3 w H - 1 0
 1. Rh8+ Kxh8 2. Qh6+ Bh7 3. Qxg7#
 
 
@@ -1497,7 +1497,7 @@ Vladislav Nevednichy vs Alin Ardeleanu, Brasov, 1998
 
 
 Joerg Ott vs G Straub, Finkenstein, 1998
-r1bqrnk1/ppp3pp/2nbpp2/3pN2Q/3P1P2/2PBP1B1/PP4PP/RN2K2R w KQ - 1 0
+r1bqrnk1/ppp3pp/2nbpp2/3pN2Q/3P1P2/2PBP1B1/PP4PP/RN2K2R w AH - 1 0
 1. Bxh7+ Nxh7 2. Qf7+ Kh8 3. Ng6# 
 
 
@@ -1542,7 +1542,7 @@ r2q3k/ppb3pp/2p1B3/2P1RQ2/8/6P1/PP1r3P/5RK1 w - - 1 0
 
 
 Glenn Flear vs Jean-Louis Sabatie, Creon, 1999
-r3kb1r/1p3ppp/p1n2n2/4p1N1/2B3b1/1P2P3/P4PPP/RNBR2K1 w kq - 1 0
+r3kb1r/1p3ppp/p1n2n2/4p1N1/2B3b1/1P2P3/P4PPP/RNBR2K1 w ah - 1 0
 1. Bxf7+ Ke7 2. Ba3+ Nb4 3. Bxb4# 
 
 
@@ -1577,7 +1577,7 @@ Judit Polgar vs Artashes Minasian, Batumi, 1999
 
 
 James Reed vs Aad Tenwolde, Soest, 1999
-r1bqr1k1/pp3pbR/2n1p1p1/4PnN1/2Bp1P2/2N4Q/PP4P1/R1B1K3 w Q - 1 0
+r1bqr1k1/pp3pbR/2n1p1p1/4PnN1/2Bp1P2/2N4Q/PP4P1/R1B1K3 w H - 1 0
 1. Rh8+ Bxh8 2. Qh7+ Kf8 3. Qxf7# 
 
 
@@ -1592,7 +1592,7 @@ Q7/1R5p/2kqr2n/7p/5Pb1/8/P1P2BP1/6K1 w - - 1 0
 
 
 F Tiero vs Curtalin, Lyons, 1999
-r2q1r2/pppb1pkn/3p1np1/3Pp3/2P1P1PB/2N3P1/PP1QB3/R3K2R w KQ - 1 0
+r2q1r2/pppb1pkn/3p1np1/3Pp3/2P1P1PB/2N3P1/PP1QB3/R3K2R w AH - 1 0
 1. Qh6+ Kg8 2. Bxf6 Nxf6 3. Qh8# 
 
 
@@ -1882,7 +1882,7 @@ Joel Lautier vs Meelis Kanep, Goteborg, 2005
 
 
 Viktor Laznicka vs Thomas Schunk, Internet, 2005
-r3k2r/pR2ppbp/2p2np1/8/4N3/3PB1QP/q4PP1/5RK1 w kq - 1 0
+r3k2r/pR2ppbp/2p2np1/8/4N3/3PB1QP/q4PP1/5RK1 w ah - 1 0
 1. Rb8+ Rxb8 2. Qxb8+ Kd7 3. Nc5# 
 
 
@@ -1977,7 +1977,7 @@ Sergei Movsesian vs Mihail Saltaev, Netherlands, 2006
 
 
 Teimour Radjabov vs Viswanathan Anand, Rishon le Zion, 2006
-r1b1kb1r/1p1n1p2/p1n1N2p/4P1p1/q3N2B/8/P1PQB1PP/1R2K2R w Kkq - 1 0
+r1b1kb1r/1p1n1p2/p1n1N2p/4P1p1/q3N2B/8/P1PQB1PP/1R2K2R w Aah - 1 0
 1. Nf6+ Nxf6 2. Nc7+ Ke7 3. Qd6# 
 
 
@@ -2132,7 +2132,7 @@ Emre Can vs Jorge Baules, Dresden, 2008
 
 
 Laura Collado Barbas vs Maria Acebal Muniz, Novetle, 2008
-r1r2k1b/pp1n1p1p/4p2P/2Pp4/2P3Q1/BP2P3/P2N1PP1/R3K3 w Q - 1 0
+r1r2k1b/pp1n1p1p/4p2P/2Pp4/2P3Q1/BP2P3/P2N1PP1/R3K3 w H - 1 0
 1. c6+ Ke8 2. Qg8+ Nf8 3. Qxf8# 
 
 
@@ -2282,7 +2282,7 @@ Mihaly Ujhazi vs Milovan Peric, Senta, 2010
 
 
 Szidonia Vajda vs Tatev Abrahamyan, Khanty Mansyisk, 2010
-3rk2r/pQR1np1p/1n4p1/8/3PN2b/1B1qB2P/P4PP1/4K2R w Kk - 1 0
+3rk2r/pQR1np1p/1n4p1/8/3PN2b/1B1qB2P/P4PP1/4K2R w Aa - 1 0
 1. Rxe7+ Bxe7 2. Nf6+ Bxf6 3. Qxf7# 
 
 
@@ -2352,7 +2352,7 @@ Viktor Polischtschuk vs Gerlef Meins, Germany 12/8/2012
 
 White Mates in 3.
 Evgeny Sveshnikov vs Daniel Fridman, Tallinn, 1/13/2013
-rnb1qr2/ppp1Nkp1/3p4/4P1B1/7Q/5N2/PPP3PP/R3K2n w Q - 1 0
+rnb1qr2/ppp1Nkp1/3p4/4P1B1/7Q/5N2/PPP3PP/R3K2n w H - 1 0
 1. Qc4+ d5 2. e6+ Bxe6 3. Ne5#
 
 Black Mates in 3.
@@ -2392,7 +2392,7 @@ Alexey Kislinsky vs Joseph Gallagher, Legnica, 5/13/2013
 
 Black Mates in 3.
 Burak Firat vs Bart Michiels, Legnica, 5/14/2013
-r1b1k2r/p5pp/2n1p3/q2pP1B1/n2P1N2/1p1R3Q/PpP1B1PP/1K5R b kq - 0 1
+r1b1k2r/p5pp/2n1p3/q2pP1B1/n2P1N2/1p1R3Q/PpP1B1PP/1K5R b ah - 0 1
 1... Nc3+ 2. Kxb2 Qxa2+ 3. Kxc3 Qxc2#
 
 Black Mates in 3.

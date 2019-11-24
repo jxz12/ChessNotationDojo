@@ -137,6 +137,7 @@ public partial class Engine
                 var allies = white? whitePieces : blackPieces;
 
                 int rookPos = GetPos(rookRank, rookFile);
+                // UnityEngine.Debug.Log(rookRank+" "+rookFile+" "+rookPos);
                 if (allies[rookPos] != Piece.Rook)
                 {
                     throw new Exception("no rook on " + FEN[i] + " file");
@@ -173,6 +174,7 @@ public partial class Engine
                 UnityEngine.Debug.Log(king+" "+rook);
             }
         }
+        UnityEngine.Debug.Log(castles.Count);
 
         // en passant
         i += 1;

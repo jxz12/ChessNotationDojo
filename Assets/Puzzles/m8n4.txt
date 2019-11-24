@@ -531,7 +531,7 @@ r7/2p2p2/3p3k/pR1P1Kb1/3P2pr/B1PB1b2/P4P2/1R6 b - - 0 1
 
 
 E Machatschek vs H Springob, corr., 1963
-r1bq3Q/pppnk1p1/2n1p1P1/3pPr2/1b1P4/1NP5/PP3PP1/R1B1K3 w Q - 0 1
+r1bq3Q/pppnk1p1/2n1p1P1/3pPr2/1b1P4/1NP5/PP3PP1/R1B1K3 w H - 0 1
 1. Bg5+ Rf6 2. Bxf6+ gxf6 3. Qg7+ Ke8 4. Qf7# 
 
 
@@ -791,7 +791,7 @@ Mikhail Tal vs David Bronstein, Tbilisi, 1982
 
 
 John Van Der Wiel vs Georg Danner, Lucerne, 1982
-1Qb2b1r/1p1k1p1p/3p1p2/3p4/p2NPP2/1R6/q1P3PP/4K2R w K - 0 1
+1Qb2b1r/1p1k1p1p/3p1p2/3p4/p2NPP2/1R6/q1P3PP/4K2R w A - 0 1
 1. Rxb7+ Bxb7 2. Qxb7+ Kd8 3. Nc6+ Ke8 4. Qc8# 
 
 
@@ -1016,7 +1016,7 @@ r5k1/pbpn2pp/1p1pp1r1/5p2/1PPP3q/P3P1P1/3Q1P1P/R1BB1RK1 b - - 0 1
 
 
 Georgios Alexopoulos vs Frank Ayaso, USA, 1990
-rnbqkb1r/np1p2pp/p1p1pp2/3PP3/2P2P2/P1NB4/1P4PP/R1BQK1NR w KQkq - 0 1
+rnbqkb1r/np1p2pp/p1p1pp2/3PP3/2P2P2/P1NB4/1P4PP/R1BQK1NR w AHah - 0 1
 1. Qh5+ g6 2. Bxg6+ hxg6 3. Qxg6+ Ke7 4. d6#
 
 
@@ -1126,7 +1126,7 @@ Sigurdur Sigfusson vs Johann Hjartarson, Gardabaer, 1991
 
 
 Sayed Barakat Hassan vs Neamul Haque, Manila, 1992
-r1b1kr2/3q1p2/p1Q5/3p3p/8/3B4/PPP2PPP/R5K1 w q - 0 1
+r1b1kr2/3q1p2/p1Q5/3p3p/8/3B4/PPP2PPP/R5K1 w h - 0 1
 1. Re1+ Kd8 2. Qb6+ Qc7 3. Qf6+ Qe7 4. Qxe7#
 
 
@@ -1191,7 +1191,7 @@ Jaan Ehlvest vs Ilya Gurevich, Saint Martin, 1993
 
 
 Brian Lilly vs T Jacobson, Chicago, 1993 
-r3kr2/ppq3bp/2np2p1/2pBp1B1/4P1Q1/2PP4/PP3PPP/R3K2R w KQq - 0 1
+r3kr2/ppq3bp/2np2p1/2pBp1B1/4P1Q1/2PP4/PP3PPP/R3K2R w AHh - 0 1
 1. Bxc6+ Kf7 2. Bd5+ Ke8 3. Qe6+ Qe7 4. Qxe7# 
 
 
@@ -1301,7 +1301,7 @@ Charles Van Buskirk vs Gregory Kaidanov, Reno, 1994
 
 
 Benjamin Bassett vs Nicky Krstic, Canberra, 1995 
-r1b1k2N/pppp2pp/2n5/2b1p3/2B1n2q/2N3P1/PPPP1P1P/R1BQK2R b KQq - 0 1
+r1b1k2N/pppp2pp/2n5/2b1p3/2B1n2q/2N3P1/PPPP1P1P/R1BQK2R b AHh - 0 1
 1... Bxf2+ 2. Kf1 Qh3+ 3. Ke2 Nd4+ 4. Kd3 Nc5# 
 
 
@@ -1326,12 +1326,12 @@ r7/5B2/3npkP1/7K/1P3p2/5P2/p7/R7 b - - 0 1
 
 
 Wilhelm Kluenter vs Holger Hank, Cologne, 1995 
-2kr1b1r/pp1n1ppp/2n1p3/1N1pP3/QP1P4/P2q1N2/3B1PPP/2R1K2R w K - 0 1
+2kr1b1r/pp1n1ppp/2n1p3/1N1pP3/QP1P4/P2q1N2/3B1PPP/2R1K2R w A - 0 1
 1. Rxc6+ bxc6 2. Qa6+ Kb8 3. Qxa7+ Kc8 4. Qc7#
 
 
 Nils Lindemann vs Werner Viehmann, Mainz, 1995 
-r1b1k2r/pp2bpp1/1np1p2p/8/4BB2/3R1N2/qPP1QPPP/2K4R b kq - 0 1
+r1b1k2r/pp2bpp1/1np1p2p/8/4BB2/3R1N2/qPP1QPPP/2K4R b ah - 0 1
 1... Qa1+ 2. Kd2 Nc4+ 3. Kc3 Qxb2+ 4. Kxc4 b5#
 
 
@@ -1526,7 +1526,7 @@ Nigel Davies vs Vlad Tomescu, Saint Vincent, 1999
 
 
 Kai Friedrich vs Torsten Zuther, Verden, 1999 
-2b1k2r/3nb1pp/3npp2/B2pN1q1/Q2P4/4P3/PP3PPP/2R2RK1 w k - 0 1
+2b1k2r/3nb1pp/3npp2/B2pN1q1/Q2P4/4P3/PP3PPP/2R2RK1 w a - 0 1
 1. Rxc8+ Nxc8 2. Qxd7+ Kf8 3. Qxc8+ Bd8 4. Qxd8# 
 
 
@@ -1691,7 +1691,7 @@ r3n1k1/pb5p/4N1p1/2pr4/q7/3B3P/1P1Q1PP1/2B1R1K1 w - - 1 0
 
 
 Peter Zebre vs Scott Gusba, Internet, 2001
-r1bq1r1k/pp1nb1p1/2p1ppB1/3pP3/2PP4/2P5/P1QN1PPP/R1B1K2R w KQ - 0 1
+r1bq1r1k/pp1nb1p1/2p1ppB1/3pP3/2PP4/2P5/P1QN1PPP/R1B1K2R w AH - 0 1
 1. Qd1 Kg8 2. Qh5 Re8 3. Qh7+ Kf8 4. Qh8#
 
 
@@ -1836,7 +1836,7 @@ Ivaan Cheparinov vs Jordan Ivanov, Elgoibar, 2004
 
 
 Arnold Fuchs vs Reinhold Naepflin, Zurich, 2004
-1rbq1rk1/p3npbp/2npp1PB/2p5/1p2P3/2NP2P1/PPPQ1PB1/R3K1NR w KQ - 0 1
+1rbq1rk1/p3npbp/2npp1PB/2p5/1p2P3/2NP2P1/PPPQ1PB1/R3K1NR w AH - 0 1
 1. gxh7+ Kh8 2. Bxg7+ Kxg7 3. Qh6+ Kh8 4. Qf6#
 
 
