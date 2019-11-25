@@ -60,8 +60,8 @@ public partial class Engine
         int targetPos = GetPos(targetRank, targetFile);
 
         if (InBounds(targetRank, targetFile) &&
-            (whiteToMove? blackPieces[targetPos] != Piece.None
-                        : whitePieces[targetPos] != Piece.None))
+            (whiteToMove? whitePieces[targetPos] == Piece.None
+                        : blackPieces[targetPos] == Piece.None))
             // only blocked by own pieces
         {
             yield return targetPos;
@@ -185,7 +185,7 @@ public partial class Engine
                             type = Move.Special.Normal,
                             moved = allies[pos],
                             captured = enemies[attack],
-                            promotion = Piece.Pawn,
+                            // promotion = Piece.Pawn,
                             previous = current
                         };
                         foreach (Move m in PromotionsIfPossible(pysh))
@@ -213,7 +213,7 @@ public partial class Engine
                             type = Move.Special.Normal,
                             moved = allies[pos],
                             captured = enemies[attack],
-                            promotion = Piece.Pawn,
+                            // promotion = Piece.Pawn,
                             previous = current
                         };
                         foreach (Move m in PromotionsIfPossible(pish))
@@ -241,7 +241,7 @@ public partial class Engine
                         type = Move.Special.EnPassant,
                         moved = allies[pos],
                         captured = Piece.Pawn,
-                        promotion = Piece.Pawn,
+                        // promotion = Piece.Pawn,
                         previous = current
                     };
                 }
@@ -397,27 +397,25 @@ public partial class Engine
         else
         {
             // FIXME:
-            // // need to also check all squares moved through when castling
-            // int kingLeft;
-            // int kingRight;
-            // if (current.source < current.target)
-            // {
-            //     kingLeft = current.source;
-            //     kingRight = GetPos(GetRank(current.source), RightCastledFile);
-            // }
-            // else
-            // {
-            //     kingLeft = GetPos(GetRank(current.source), LeftCastledFile);
-            //     kingRight = current.source;
-            // }
-            // foreach (Move next in nexts)
-            // {
-            //     if (next.target >= kingLeft && next.target <= kingRight)
-            //     {
-            //         return true;
-            //     }
-            // }
-            return true;
+            int king=current.source, rook=current.target;
+            int kingEnd;
+            if (king < rook) // king moves right
+            {
+                kingEnd = castle960? GetPos(GetRank(king), NFiles-3) : king+2; // TODO: what if king is near edge?
+            }
+            else // king moves left
+            {
+                kingEnd = castle960? GetPos(GetRank(king), 3) : king-2;
+            }
+            int kingLeft = Math.Min(king, kingEnd);
+            int kingRight = Math.Max(king, kingEnd);
+            foreach (Move next in nexts)
+            {
+                if (next.target >= kingLeft && next.target <= kingRight)
+                {
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -450,7 +448,6 @@ public partial class Engine
 
     private void AddPiece(Piece type, int pos, bool white)
     {
-        // UnityEngine.Debug.Log(type + "+" + pos);
         if (Occupied(pos))
             throw new Exception("sorry " + type + ", " + pos + " occupado");
 
@@ -465,7 +462,6 @@ public partial class Engine
     }
     private void RemovePiece(int pos, bool white)
     {
-        // UnityEngine.Debug.Log(type + "-" + pos);
         if (!Occupied(pos))
             throw new Exception(pos + " no piece here");
 
@@ -529,7 +525,7 @@ public partial class Engine
         {
             AddPiece(move.moved, move.target, move.whiteMove);
         }
-        // FIXME: also update the halfmove clock
+        // FIXME: also update the halfmove clock for draw check
     }
     private void UndoMove(Move move)
     {

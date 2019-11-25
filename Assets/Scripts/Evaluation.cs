@@ -9,7 +9,7 @@ public partial class Engine
         captures = EPs = castls = promos = checks = 0;
         int nodes = Perft(prevMove, ply);
 
-        // UnityEngine.Debug.Log(captures + " " + EPs + " " + castles + " " + promos + " " + checks);
+        UnityEngine.Debug.Log(captures + " " + EPs + " " + castls + " " + promos + " " + checks);
         return nodes;
     }
     private int Perft(Move current, int ply)

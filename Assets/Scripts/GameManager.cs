@@ -107,6 +107,8 @@ public class GameManager : MonoBehaviour
         candidate = "";
         allCandidates = new HashSet<string>(thomas.GetPGNs());
         ShowPossibleChars();
+
+        // Perft(2);
     }
     public void SetQuote(string quote)
     {
