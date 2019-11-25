@@ -122,7 +122,7 @@ public partial class Engine
         int forward = whiteToMove? NFiles : -NFiles;
 
         // go through each piece and generate moves
-        for (int pos=0; pos<allies.Count; pos++)
+        for (int pos=0; pos<allies.Length; pos++)
         {
             int rank = GetRank(pos);
             int file = GetFile(pos);
@@ -434,17 +434,25 @@ public partial class Engine
         }
         return false;
     }
+
+    // FIXME: checks to test win conditions
     // public bool Check()
     // {
     //     return IsCheck(prevMove);
     // }
-    public int NumPieces(bool white)
-    {
-        if (white)
-            return whitePieces.Count;
-        else
-            return blackPieces.Count;
-    }
+    // public int NumPieces(bool white)
+    // {
+    //     if (white)
+    //     {
+    //         if count 
+    //         foreach (Piece p in whitePieces)
+    //         return whitePieces.Count;
+    //     }
+    //     else
+    //     {
+    //         return blackPieces.Count;
+    //     }
+    // }
 
     private void AddPiece(Piece type, int pos, bool white)
     {
@@ -498,7 +506,6 @@ public partial class Engine
         if (move.type == Move.Special.Castle)
         {
             // FIXME:
-            RemovePiece(move.source, move.whiteMove);
             RemovePiece(move.target, move.whiteMove);
 
             int king=move.source, rook=move.target;
@@ -536,7 +543,6 @@ public partial class Engine
         if (move.type == Move.Special.Castle)
         {
             // FIXME:
-            AddPiece(Piece.VirginKing, move.source, move.whiteMove);
             AddPiece(Piece.VirginRook, move.target, move.whiteMove);
 
             int king=move.source, rook=move.target;
@@ -577,5 +583,6 @@ public partial class Engine
                 AddPiece(move.captured, move.target, !move.whiteMove);
             }
         }
+        // FIXME: also update the halfmove clock for draw check
     }
 }

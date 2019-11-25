@@ -32,11 +32,13 @@ public class Menu : MonoBehaviour
     void Start()
     {
         ShowAllProgress();
-        // "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w AHah -"
-        // "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - "
-        // "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w ah - 0 1"
-        // "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w AHah - 1 0"
-        boardClassical.FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1";
+
+        // boardClassical.FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1";
+        boardClassical.FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w AHah - 0 1";
+        // boardClassical.FEN = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1";
+        // boardClassical.FEN = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w ah - 0 1";
+        // boardClassical.FEN = "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w AHah - 1 0";
+
         StartCoroutine(Refresh960(.2f));
         boardHorde.FEN = "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w AH - 0 1";
         boardPeasants.FEN = "1nn1knn1/4p3/8/8/8/8/PPPPPPPP/4K3 w - - 0 1";

@@ -10,8 +10,8 @@ public partial class Engine
 {
     private enum Piece { None=0, Pawn, Rook, Knight, Bishop, Queen, King,
                          VirginPawn, VirginRook, VirginKing }; // for castling, en passant etc.
-    private List<Piece> whitePieces;
-    private List<Piece> blackPieces;
+    private Piece[] whitePieces;
+    private Piece[] blackPieces;
     private Dictionary<int, HashSet<int>> castles; // king->rook
 
     // a class to store all the information needed for a move
@@ -65,13 +65,8 @@ public partial class Engine
         if (NFiles > 26 || NRanks > 16)
             throw new Exception("cannot have more than 26x16 board (blame ASCII lol)");
 
-        whitePieces = new List<Piece>(NRanks*NFiles);
-        blackPieces = new List<Piece>(NRanks*NFiles);
-        for (int pos=0; pos<NRanks*NFiles; pos++)
-        {
-            whitePieces.Add(Piece.None);
-            blackPieces.Add(Piece.None);
-        }
+        whitePieces = new Piece[NRanks*NFiles];
+        blackPieces = new Piece[NRanks*NFiles];
 
         int rank = NRanks-1;
         int file = -1;
@@ -122,7 +117,7 @@ public partial class Engine
         // castling I HATE YOU
         i += 2;
         castles = new Dictionary<int, HashSet<int>>();
-        for (int pos=0; pos<whitePieces.Count; pos++)
+        for (int pos=0; pos<whitePieces.Length; pos++)
         {
             if (whitePieces[pos] == Piece.VirginKing || blackPieces[pos] == Piece.VirginKing)
                 castles[pos] = new HashSet<int>();
@@ -147,6 +142,7 @@ public partial class Engine
                     int kingPos = GetPos(rookRank, kingFile);
                     if (allies[kingPos] == Piece.VirginKing)
                     {
+                        allies[rookPos] = Piece.VirginRook;
                         castles[kingPos].Add(rookPos);
                         break; // only connect to closest king
                     }
@@ -157,6 +153,7 @@ public partial class Engine
                     int kingPos = GetPos(rookRank, kingFile);
                     if (allies[kingPos] == Piece.VirginKing)
                     {
+                        allies[rookPos] = Piece.VirginRook;
                         castles[kingPos].Add(rookPos);
                         break; // only connect to closest king
                     }
