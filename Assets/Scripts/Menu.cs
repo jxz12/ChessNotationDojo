@@ -43,7 +43,7 @@ public class Menu : MonoBehaviour
         boardMicro.FEN = "knbr/p3/4/3P/RBNK w Da - 0 1";
         boardDemi.FEN = "kbnr/pppp/4/4/4/4/pppp/KBNR w Aa - 0 1";
         boardBaby.FEN = "kqbnr/ppppp/5/PPPPP/RNBQK w - - 0 1";
-        boardDouble.FEN = "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w AHGPahgp - 0 1";
+        boardDouble.FEN = "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w AHIPahip - 0 1";
     }
     IEnumerator Refresh960(float delay)
     {

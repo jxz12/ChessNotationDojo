@@ -96,7 +96,7 @@ public class GameManager : MonoBehaviour
             char input = (char)('1'+i);
             var rank = Instantiate(inputPrefab);
             rank.GetComponent<Button>().onClick.AddListener(()=> InputChar(input));
-            rank.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = rank.name = input.ToString();
+            rank.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = rank.name = (i+1).ToString();
             rank.transform.SetParent(ranksParent.transform, false);
             rank.transform.SetAsLastSibling();
 
@@ -183,11 +183,11 @@ public class GameManager : MonoBehaviour
             char c = move[idx];
             // print(move + " " + c);
 
-            if (c >= 'a' && c <= 'h')
+            if (c >= 'a' && c <= 'z')
             {
                 files[c - 'a'].interactable = true;
             }
-            else if (c >= '1' && c <= '8') 
+            else if (c >= '1' && c <= '@') // @ is '0'+16
             {
                 ranks[c - '1'].interactable = true;
             }

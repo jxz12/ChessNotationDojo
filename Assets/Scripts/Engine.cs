@@ -303,6 +303,11 @@ public partial class Engine
             if (whitePieces[pos] == Piece.None && blackPieces[pos] == Piece.None)
             {
                 empty += 1;
+                if (empty >= 8)
+                {
+                    sb.Append(empty);
+                    empty = 0;
+                }
             }
             else
             {
@@ -370,7 +375,7 @@ public partial class Engine
             {
                 sb.Append('x').Append((char)('a'+(move.target%NFiles)));
             }
-            sb.Append(move.target/NFiles + 1);
+            sb.Append((char)('1'+(move.target/NFiles)));
             if (move.promotion != Piece.None
                 && move.promotion != Piece.Pawn)
             {
@@ -385,7 +390,7 @@ public partial class Engine
                 sb.Append('x');
 
             sb.Append((char)('a'+(move.target%NFiles)));
-            sb.Append(move.target/NFiles + 1);
+            sb.Append((char)('1'+(move.target/NFiles)));
         }
         return sb.ToString();
     }
