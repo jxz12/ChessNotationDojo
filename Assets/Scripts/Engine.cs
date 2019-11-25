@@ -62,8 +62,8 @@ public partial class Engine
             else
                 NFiles += 1;
         }
-        if (NFiles > 26 || NRanks > 16)
-            throw new Exception("cannot have more than 26x16 board (blame ASCII lol)");
+        if (NFiles > 23 || NRanks > 16)
+            throw new Exception("cannot have more than 23x16 board (blame ASCII lol)");
 
         whitePieces = new Piece[NRanks*NFiles];
         blackPieces = new Piece[NRanks*NFiles];

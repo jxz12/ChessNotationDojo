@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour
         allCandidates = new HashSet<string>(thomas.GetPGNs());
         ShowPossibleChars();
 
-        Perft(3);
+        // Perft(3);
     }
     public void SetQuote(string quote)
     {
@@ -181,9 +181,9 @@ public class GameManager : MonoBehaviour
                 continue;
 
             char c = move[idx];
-            // print(move + " " + c);
+            print(move + " " + c);
 
-            if (c >= 'a' && c <= 'z')
+            if (c >= 'a' && c <= 'w')
             {
                 files[c - 'a'].interactable = true;
             }
