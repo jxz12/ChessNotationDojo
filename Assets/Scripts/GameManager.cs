@@ -153,26 +153,11 @@ public class GameManager : MonoBehaviour
 
     void ShowPossibleChars()
     {
-        N.interactable = false;
-        B.interactable = false;
-        R.interactable = false;
-        Q.interactable = false;
-        K.interactable = false;
-        eq.interactable = false;
-        x.interactable = false;
-        foreach (Button b in files)
-        {
-            b.interactable = false;
-        }
-        foreach (Button b in ranks)
-        {
-            b.interactable = false;
-        }
+        DisableKeyboard();
         if (candidate == null)
         {
             return;
         }
-
         int idx = candidate.Length;
         bksp.interactable = candidate.Length > 0;
         foreach (string move in allCandidates)
@@ -201,6 +186,25 @@ public class GameManager : MonoBehaviour
             else throw new Exception("Unexpected input " + c);
         }
     }
+    void DisableKeyboard()
+    {
+        N.interactable = false;
+        B.interactable = false;
+        R.interactable = false;
+        Q.interactable = false;
+        K.interactable = false;
+        eq.interactable = false;
+        x.interactable = false;
+        bksp.interactable = false;
+        foreach (Button b in files)
+        {
+            b.interactable = false;
+        }
+        foreach (Button b in ranks)
+        {
+            b.interactable = false;
+        }
+    }
     void InputChar(char input)
     {
         if (thomas == null)
@@ -218,7 +222,7 @@ public class GameManager : MonoBehaviour
             {
                 if (candidate == sequence.Peek())
                 {
-                    PlayMove(sequence.Dequeue(), false);
+                    PlayMove(sequence.Dequeue());
                     if (sequence.Count > 0)
                     {
                         StartCoroutine(WaitThenPlayMove(sequence.Dequeue(), 1));
@@ -254,7 +258,6 @@ public class GameManager : MonoBehaviour
         thomas.PlayPGN(move);
         undos.Push(move);
         redos.Clear();
-        // board.PlayMoveUCI(thomas.GetLastUCI());
         board.FEN = thomas.ToFEN();
         if (updateKeyboard)
         {
@@ -299,9 +302,15 @@ public class GameManager : MonoBehaviour
             candidate = sequence==null? "" : null;
 
             redos.Push(undos.Pop());
-            // board.PlayMoveUCI(thomas.GetLastUCI());
             board.FEN = thomas.ToFEN();
-            ShowPossibleChars();
+            if (sequence == null)
+            {
+                ShowPossibleChars();
+            }
+            else
+            {
+                DisableKeyboard();
+            }
         }
         redoButton.interactable = true;
         undoButton.interactable = undos.Count > 0;
@@ -317,9 +326,11 @@ public class GameManager : MonoBehaviour
             candidate = sequence==null || redos.Count==0? "" : null;
 
             undos.Push(redo);
-            // board.PlayMoveUCI(thomas.GetLastUCI());
             board.FEN = thomas.ToFEN();
-            ShowPossibleChars();
+            if (sequence==null || redos.Count==0)
+            {
+                ShowPossibleChars();
+            }
         }
         redoButton.interactable = redos.Count > 0;
         undoButton.interactable = true;
@@ -335,6 +346,10 @@ public class GameManager : MonoBehaviour
     void WriteMoveSheet()
     {
         var moveList = new List<string>(undos);
+        if (moveList.Count == 0)
+        {
+            return;
+        }
         var sb = new StringBuilder(moveList[moveList.Count-1]);
         for (int i=moveList.Count-2; i>=0; i--)
         {

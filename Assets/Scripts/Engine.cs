@@ -28,7 +28,7 @@ public partial class Engine
         public Piece moved = Piece.None;
         public Piece captured = Piece.None;
         public Piece promotion = Piece.None;
-        public int halfMoveClock = 0;
+        public int halfMoveClock = 0; // FIXME:
     }
 
     // board dimensions
@@ -117,12 +117,12 @@ public partial class Engine
         // castling I HATE YOU
         i += 2;
         castles = new Dictionary<int, HashSet<int>>();
-        for (int pos=0; pos<whitePieces.Length; pos++)
+        for (int pos=0; pos<whitePieces.Length; pos++) // init hashsets
         {
             if (whitePieces[pos] == Piece.VirginKing || blackPieces[pos] == Piece.VirginKing)
                 castles[pos] = new HashSet<int>();
         }
-        while (FEN[i] != ' ')
+        while (FEN[i] != ' ') // add rooks
         {
             if ((FEN[i] >= 'A' && FEN[i] <= 'Z') || (FEN[i] >= 'a' && FEN[i] <= 'z'))
             {
@@ -342,14 +342,51 @@ public partial class Engine
         }
 
         // who to move
-        sb.Append(' ').Append(totalPly%2==0? 'w' : 'b');
+        sb.Append(' ').Append(totalPly%2==0? 'w' : 'b').Append(' ');
 
-        // castling FIXME:
-        sb.Append(" FUCKTHISGAME");
+        // castling
+        var shredderCastles = new HashSet<char>();
+        for (int pos=0; pos<whitePieces.Length; pos++)
+        {
+            if (whitePieces[pos] == Piece.VirginKing)
+            {
+                foreach (var rook in castles[pos])
+                {
+                    if (whitePieces[rook] == Piece.VirginRook)
+                    {
+                        shredderCastles.Add((char)('A'+GetFile(rook)));
+                    }
+                }
+            }
+        }
+        foreach (char rookFile in shredderCastles.OrderBy(x=>x))
+        {
+            sb.Append(rookFile);
+        }
+        shredderCastles.Clear();
+        for (int pos=0; pos<blackPieces.Length; pos++)
+        {
+            if (blackPieces[pos] == Piece.VirginKing)
+            {
+                foreach (var rook in castles[pos])
+                {
+                    if (blackPieces[rook] == Piece.VirginRook)
+                    {
+                        shredderCastles.Add((char)('a'+GetFile(rook)));
+                    }
+                }
+            }
+        }
+        foreach (char rookFile in shredderCastles.OrderBy(x=>x))
+        {
+            sb.Append(rookFile);
+        }
 
         // en passant
         if (prevMove.type == Move.Special.Puush)
-            sb.Append(' ').Append('a' + GetFile(prevMove.target)).Append(GetRank(prevMove.target));
+            sb.Append(' ')
+              .Append((char)('a' + GetFile(prevMove.target)))
+              .Append((char)('1' + GetRank(prevMove.target)));
         else
             sb.Append(' ').Append("-");
 
@@ -357,7 +394,8 @@ public partial class Engine
         sb.Append(' ').Append(prevMove.halfMoveClock);
 
         // full move clock
-        sb.Append(' ').Append(totalPly/2 + 1);
+        sb.Append(' ').Append((totalPly + (prevMove.whiteMove? 1:0)) / 2);
+        // totalPly = 2*int.Parse(FEN.Substring(i)) - (prevMove.whiteMove? 1:0);
 
         return sb.ToString();
     }

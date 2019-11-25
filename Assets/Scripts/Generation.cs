@@ -397,7 +397,6 @@ public partial class Engine
         }
         else
         {
-            // FIXME:
             int king=current.source, rook=current.target;
             int kingEnd;
             if (king < rook) // king moves right
@@ -506,7 +505,6 @@ public partial class Engine
         RemovePiece(move.source, move.whiteMove);
         if (move.type == Move.Special.Castle)
         {
-            // FIXME:
             RemovePiece(move.target, move.whiteMove);
 
             int king=move.source, rook=move.target;
@@ -533,7 +531,6 @@ public partial class Engine
         {
             AddPiece(move.moved, move.target, move.whiteMove);
         }
-        // FIXME: also update the halfmove clock for draw check
     }
     private void UndoMove(Move move)
     {
@@ -543,7 +540,6 @@ public partial class Engine
         // move back source
         if (move.type == Move.Special.Castle)
         {
-            // FIXME:
             AddPiece(Piece.VirginRook, move.target, move.whiteMove);
 
             int king=move.source, rook=move.target;
@@ -584,6 +580,5 @@ public partial class Engine
                 AddPiece(move.captured, move.target, !move.whiteMove);
             }
         }
-        // FIXME: also update the halfmove clock for draw check
     }
 }
