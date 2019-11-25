@@ -50,7 +50,7 @@ public partial class Engine
         return       BishopAttacks(queen, whiteToMove)
                .Concat(RookAttacks(queen, whiteToMove));
     }
-    // for candidate knight, king, pawn moves FIXME: horrendously slow, and use for pawns
+    // for candidate knight, king, pawn moves FIXME: horrendously slow, use for pawns?
     private IEnumerable<int> HopAttack(int hopper, int fileHop, int rankHop, bool whiteToMove)
     {
         int startFile = GetFile(hopper);
@@ -90,86 +90,29 @@ public partial class Engine
                .Concat(HopAttack(king, -1, -1, whiteToMove));
     }
 
-    // all for castling
-    private int FindVirginRook(int source, bool left, bool whiteToMove)
+    private bool IsCastleBlocked(int king, int rook)
     {
-        int startFile = GetFile(source);
-        int startRank = GetRank(source);
-        int fileSlide = left? -1 : 1;
-        int targetFile = startFile + fileSlide;
-        int targetPos = GetPos(startRank, targetFile);
-        var allies = whiteToMove? whitePieces
-                                : blackPieces;
-
-        while (InBounds(startRank, targetFile))
+        int kingEnd, rookEnd;
+        if (king < rook) // king moves right
         {
-            if (Occupied(targetPos))
-            {
-                if (allies[targetPos] == Piece.VirginRook)
-                {
-                    return targetPos;
-                }
-                else
-                {
-                    return -1;
-                }
-            }
-            targetFile += fileSlide;
-            targetPos = GetPos(startRank, targetFile);
+            kingEnd = castle960? GetPos(GetRank(king), NFiles-3) : king+2; // TODO: what if king is near edge?
+            rookEnd = kingEnd - 1;
         }
-        return -1;
+        else // king moves left
+        {
+            kingEnd = castle960? GetPos(GetRank(king), 3) : king-2;
+            rookEnd = kingEnd + 1;
+        }
+        int min = Math.Min(king, Math.Min(rook, Math.Min(kingEnd, rookEnd)));
+        int max = Math.Max(king, Math.Max(rook, Math.Max(kingEnd, rookEnd)));
+
+        for (int pos=min; pos<=max; pos++)
+        {
+            if (pos!=king && pos!=rook && Occupied(pos))
+                return true;
+        }
+        return false;
     }
-    // FIXME:
-    // private int GetCastledPos(int king, bool left, bool whiteToMove)
-    // {
-    //     int rank = GetRank(king);
-    //     int file = left? LeftCastledFile : RightCastledFile;
-    //     return GetPos(rank, file);
-    // }
-    // private bool FindCastlingRook(int king, bool left, bool whiteToMove, out int virginRook)
-    // {
-    //     virginRook = FindVirginRook(king, left, whiteToMove);
-    //     if (virginRook < 0)
-    //         return false;
-    //     int castledPos = GetCastledPos(king, left, whiteToMove);
-    //     if (castledPos < 0)
-    //         return false;
-        
-    //     // check whether all squares involved are free
-    //     int leftmostPos =  left? Math.Min(virginRook, castledPos)
-    //                            : Math.Min(castledPos-1, king);
-    //     int rightmostPos = left? Math.Max(castledPos+1, king)
-    //                            : Math.Max(virginRook, castledPos);
-
-    //     for (int pos=leftmostPos; pos<=rightmostPos; pos++)
-    //     {
-    //         if (pos!=king && pos!=virginRook && Occupied(pos))
-    //             return false;
-    //     }
-    //     return true;
-    // }
-    // private bool IsRookLeftCastle(int rook, bool whiteRook)
-    // {
-    //     int rank = GetRank(rook);
-    //     int file = GetFile(rook);
-        
-    //     var allies = whiteRook? whitePieces : blackPieces;
-    //     int hop = 1;
-    //     while (rank-hop >= 0 && rank+hop < NFiles)
-    //     {
-    //         // Piece kingCheck;
-    //         if (allies[rook-hop] == Piece.VirginKing)
-    //             return true;
-    //         if (allies[rook+hop] == Piece.VirginKing)
-    //             return false;
-
-    //         hop += 1;
-    //     }
-    //     if (rank-hop == 0)
-    //         return true;
-    //     else // right
-    //         return false;
-    // }
     // Generate candidate moves given the current board state and previous move
     private IEnumerable<Move> FindPseudoLegalMoves(Move current)
     {
@@ -217,7 +160,7 @@ public partial class Engine
                                     promotion = Piece.Pawn,
                                     previous = current
                                 };
-                                foreach (Move m in PromotionsIfPossible(push))
+                                foreach (Move m in PromotionsIfPossible(push)) // TODO: maybe stupid
                                     yield return m;
                             }
                             else
@@ -379,35 +322,24 @@ public partial class Engine
                         previous = current
                     };
                 }
-                // FIXME:
-                // // castling
-                // if (allies[pos] == Piece.VirginKing)
-                // {
-                //     int leftRook;
-                //     if (FindCastlingRook(pos, true, whiteToMove, out leftRook))
-                //     {
-                //         yield return new Move() {
-                //             whiteMove = whiteToMove,
-                //             source = pos,
-                //             target = leftRook,
-                //             type = Move.Special.Castle,
-                //             moved = Piece.VirginKing,
-                //             previous = current
-                //         };
-                //     }
-                //     int rightRook;
-                //     if (FindCastlingRook(pos, false, whiteToMove, out rightRook))
-                //     {
-                //         yield return new Move() {
-                //             whiteMove = whiteToMove,
-                //             source = pos,
-                //             target = rightRook,
-                //             type = Move.Special.Castle,
-                //             moved = Piece.VirginKing,
-                //             previous = current
-                //         };
-                //     }
-                // }
+                // castling
+                if (allies[pos] == Piece.VirginKing)
+                {
+                    foreach (int rook in castles[pos])
+                    {
+                        if (allies[rook] == Piece.VirginRook && !IsCastleBlocked(pos, rook))
+                        {
+                            yield return new Move() {
+                                whiteMove = whiteToMove,
+                                source = pos,
+                                target = rook,
+                                type = Move.Special.Castle,
+                                moved = Piece.VirginKing,
+                                previous = current
+                            };
+                        }
+                    }
+                }
             }
         }
     }
@@ -531,11 +463,11 @@ public partial class Engine
             blackPieces[pos] = type;
         }
     }
-    private void RemovePiece(Piece type, int pos, bool white)
+    private void RemovePiece(int pos, bool white)
     {
         // UnityEngine.Debug.Log(type + "-" + pos);
         if (!Occupied(pos))
-            throw new Exception(pos + " no piece " + type + " here");
+            throw new Exception(pos + " no piece here");
 
         if (white)
         {
@@ -557,29 +489,37 @@ public partial class Engine
         {
             if (move.type == Move.Special.EnPassant)
             {
-                RemovePiece(Piece.Pawn, move.previous.target, !move.whiteMove);
+                RemovePiece(move.previous.target, !move.whiteMove);
             }
             else
             {
-                RemovePiece(move.captured, move.target, !move.whiteMove);
+                RemovePiece(move.target, !move.whiteMove);
             }
         }
 
         // move source
-        RemovePiece(move.moved, move.source, move.whiteMove);
+        RemovePiece(move.source, move.whiteMove);
         if (move.type == Move.Special.Castle)
         {
             // FIXME:
-            // RemovePiece(Piece.VirginRook, move.target, move.whiteMove);
+            RemovePiece(move.source, move.whiteMove);
+            RemovePiece(move.target, move.whiteMove);
 
-            // int rank = GetRank(move.source);
-            // bool left = move.source > move.target;
-            // int castledKing = GetCastledPos(move.source, left, move.whiteMove);
-            // int castledRook = left? castledKing+1 : castledKing-1;
-            // AddPiece(Piece.King, castledKing, move.whiteMove);
-            // AddPiece(Piece.Rook, castledRook, move.whiteMove);
+            int king=move.source, rook=move.target;
+            int kingEnd, rookEnd;
+            if (king < rook) // king moves right
+            {
+                kingEnd = castle960? GetPos(GetRank(king), NFiles-3) : king+2; // TODO: what if king is near edge?
+                rookEnd = kingEnd - 1;
+            }
+            else // king moves left
+            {
+                kingEnd = castle960? GetPos(GetRank(king), 3) : king-2;
+                rookEnd = kingEnd + 1;
+            }
 
-            // FIXME: also update the halfmove clock
+            AddPiece(Piece.King, kingEnd, move.whiteMove);
+            AddPiece(Piece.Rook, rookEnd, move.whiteMove);
         }
         else if (move.promotion != Piece.None)
         {
@@ -589,6 +529,7 @@ public partial class Engine
         {
             AddPiece(move.moved, move.target, move.whiteMove);
         }
+        // FIXME: also update the halfmove clock
     }
     private void UndoMove(Move move)
     {
@@ -599,22 +540,32 @@ public partial class Engine
         if (move.type == Move.Special.Castle)
         {
             // FIXME:
-            // int rank = GetRank(move.source);
-            // bool left = move.source > move.target;
-            // int castledKing = GetCastledPos(move.source, left, move.whiteMove);
-            // int castledRook = left? castledKing+1 : castledKing-1;
-            // RemovePiece(Piece.King, castledKing, move.whiteMove);
-            // RemovePiece(Piece.Rook, castledRook, move.whiteMove);
+            AddPiece(Piece.VirginKing, move.source, move.whiteMove);
+            AddPiece(Piece.VirginRook, move.target, move.whiteMove);
 
-            // AddPiece(Piece.VirginRook, move.target, move.whiteMove);
+            int king=move.source, rook=move.target;
+            int kingEnd, rookEnd;
+            if (king < rook) // king moves right
+            {
+                kingEnd = castle960? GetPos(GetRank(king), NFiles-3) : king+2; // TODO: what if king is near edge?
+                rookEnd = kingEnd - 1;
+            }
+            else // king moves left
+            {
+                kingEnd = castle960? GetPos(GetRank(king), 3) : king-2;
+                rookEnd = kingEnd + 1;
+            }
+
+            RemovePiece(kingEnd, move.whiteMove);
+            RemovePiece(rookEnd, move.whiteMove);
         }
         else if (move.promotion != Piece.None)
         {
-            RemovePiece(move.promotion, move.target, move.whiteMove);
+            RemovePiece(move.target, move.whiteMove);
         }
         else
         {
-            RemovePiece(move.moved, move.target, move.whiteMove);
+            RemovePiece(move.target, move.whiteMove);
         }
         AddPiece(move.moved, move.source, move.whiteMove);
 

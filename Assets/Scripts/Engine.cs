@@ -137,7 +137,6 @@ public partial class Engine
                 var allies = white? whitePieces : blackPieces;
 
                 int rookPos = GetPos(rookRank, rookFile);
-                // UnityEngine.Debug.Log(rookRank+" "+rookFile+" "+rookPos);
                 if (allies[rookPos] != Piece.Rook)
                 {
                     throw new Exception("no rook on " + FEN[i] + " file");
@@ -145,16 +144,17 @@ public partial class Engine
                 // find closest King left
                 for (int kingFile=rookFile-1; kingFile>=0; kingFile--)
                 {
-                    int kingPos = GetPos(0, kingFile);
+                    int kingPos = GetPos(rookRank, kingFile);
                     if (allies[kingPos] == Piece.VirginKing)
                     {
                         castles[kingPos].Add(rookPos);
                         break; // only connect to closest king
                     }
                 }
+                // find closest King right
                 for (int kingFile=rookFile+1; kingFile<NFiles; kingFile++)
                 {
-                    int kingPos = GetPos(0, kingFile);
+                    int kingPos = GetPos(rookRank, kingFile);
                     if (allies[kingPos] == Piece.VirginKing)
                     {
                         castles[kingPos].Add(rookPos);
@@ -167,14 +167,6 @@ public partial class Engine
 
             i += 1;
         }
-        foreach (int king in castles.Keys)
-        {
-            foreach (int rook in castles[king])
-            {
-                UnityEngine.Debug.Log(king+" "+rook);
-            }
-        }
-        UnityEngine.Debug.Log(castles.Count);
 
         // en passant
         i += 1;
