@@ -13,7 +13,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] Button N, B, R, Q, K, x, eq, bksp;
     [SerializeField] HorizontalLayoutGroup ranksParent, filesParent;
     [SerializeField] Button undoButton, redoButton, quitButton, evalButton;
-    [SerializeField] TMPro.TextMeshProUGUI titleText;
+    [SerializeField] TMPro.TextMeshProUGUI titleText, movesText;
     [SerializeField] MessageScroller quoteScroller;
 
     void Start()
@@ -183,7 +183,7 @@ public class GameManager : MonoBehaviour
             char c = move[idx];
             // print(move + " " + c);
 
-            if (c >= 'a' && c <= 'w')
+            if (c >= 'a' && c <= 'w') // collision with capture :(
             {
                 files[c - 'a'].interactable = true;
             }
@@ -234,7 +234,7 @@ public class GameManager : MonoBehaviour
                 }
                 else
                 {
-                    // TODO: show escaping variation
+                    // TODO: show escaping variation?
                     StartCoroutine(DisplayTitleForTime("WRONG", 1, Color.red, TMPro.FontStyles.Bold));
                     candidate = "";
                 }
@@ -259,11 +259,17 @@ public class GameManager : MonoBehaviour
         if (updateKeyboard)
         {
             allCandidates = new HashSet<string>(thomas.GetPGNs());
+            // check for win conditions
+            if (allCandidates.Count == 0)
+            {
+                // TODO:
+            }
             candidate = "";
             ShowPossibleChars();
         }
         undoButton.interactable = true;
         redoButton.interactable = false;
+        WriteMoveSheet();
     }
     IEnumerator WaitThenPlayMove(string move, float seconds)
     {
@@ -299,6 +305,7 @@ public class GameManager : MonoBehaviour
         }
         redoButton.interactable = true;
         undoButton.interactable = undos.Count > 0;
+        WriteMoveSheet();
     }
     void RedoMove()
     {
@@ -325,40 +332,14 @@ public class GameManager : MonoBehaviour
         candidate = candidate.Substring(0, candidate.Length-1);
         ShowPossibleChars();
     }
-    // void Update()
-    // {
-        // if (Input.GetKeyDown(KeyCode.LeftArrow)) UndoMove();
-        // else if (Input.GetKeyDown(KeyCode.RightArrow)) RedoMove();
-        // else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-        // {
-        //     if (Input.GetKeyDown(KeyCode.N) && N.interactable) InputChar('N');
-        //     else if (Input.GetKeyDown(KeyCode.B) && B.interactable) InputChar('B');
-        //     else if (Input.GetKeyDown(KeyCode.R) && R.interactable) InputChar('R');
-        //     else if (Input.GetKeyDown(KeyCode.Q) && Q.interactable) InputChar('Q');
-        //     else if (Input.GetKeyDown(KeyCode.K) && K.interactable) InputChar('K');
-        //     else if (Input.GetKeyDown(KeyCode.Comma) && O_O_O.interactable) InputChar('<');
-        //     else if (Input.GetKeyDown(KeyCode.Period) && O_O.interactable) InputChar('>');
-        // }
-        // else if (Input.GetKeyDown(KeyCode.Backspace)) UndoChar();
-        // else if (Input.GetKeyDown(KeyCode.X) && x.interactable) InputChar('x');
-        // else if (Input.GetKeyDown(KeyCode.Equals) && eq.interactable) InputChar('=');
-
-        // else if (Input.GetKeyDown(KeyCode.A) && files[0].interactable) InputChar('a');
-        // else if (Input.GetKeyDown(KeyCode.B) && files[1].interactable) InputChar('b');
-        // else if (Input.GetKeyDown(KeyCode.C) && files[2].interactable) InputChar('c');
-        // else if (Input.GetKeyDown(KeyCode.D) && files[3].interactable) InputChar('d');
-        // else if (Input.GetKeyDown(KeyCode.E) && files[4].interactable) InputChar('e');
-        // else if (Input.GetKeyDown(KeyCode.F) && files[5].interactable) InputChar('f');
-        // else if (Input.GetKeyDown(KeyCode.G) && files[6].interactable) InputChar('g');
-        // else if (Input.GetKeyDown(KeyCode.H) && files[7].interactable) InputChar('h');
-
-        // else if (Input.GetKeyDown(KeyCode.Alpha1) && ranks[0].interactable) InputChar('1');
-        // else if (Input.GetKeyDown(KeyCode.Alpha2) && ranks[1].interactable) InputChar('2');
-        // else if (Input.GetKeyDown(KeyCode.Alpha3) && ranks[2].interactable) InputChar('3');
-        // else if (Input.GetKeyDown(KeyCode.Alpha4) && ranks[3].interactable) InputChar('4');
-        // else if (Input.GetKeyDown(KeyCode.Alpha5) && ranks[4].interactable) InputChar('5');
-        // else if (Input.GetKeyDown(KeyCode.Alpha6) && ranks[5].interactable) InputChar('6');
-        // else if (Input.GetKeyDown(KeyCode.Alpha7) && ranks[6].interactable) InputChar('7');
-        // else if (Input.GetKeyDown(KeyCode.Alpha8) && ranks[7].interactable) InputChar('8');
-    // }
+    void WriteMoveSheet()
+    {
+        var moveList = new List<string>(undos);
+        var sb = new StringBuilder(moveList[moveList.Count-1]);
+        for (int i=moveList.Count-2; i>=0; i--)
+        {
+            sb.Append(" ").Append(moveList[i]);
+        }
+        movesText.text = sb.ToString();
+    }
 }

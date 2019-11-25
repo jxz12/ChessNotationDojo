@@ -185,7 +185,7 @@ public partial class Engine
                             type = Move.Special.Normal,
                             moved = allies[pos],
                             captured = enemies[attack],
-                            // promotion = Piece.Pawn,
+                            promotion = Piece.Pawn,
                             previous = current
                         };
                         foreach (Move m in PromotionsIfPossible(pysh))
@@ -213,7 +213,7 @@ public partial class Engine
                             type = Move.Special.Normal,
                             moved = allies[pos],
                             captured = enemies[attack],
-                            // promotion = Piece.Pawn,
+                            promotion = Piece.Pawn,
                             previous = current
                         };
                         foreach (Move m in PromotionsIfPossible(pish))
@@ -241,7 +241,7 @@ public partial class Engine
                         type = Move.Special.EnPassant,
                         moved = allies[pos],
                         captured = Piece.Pawn,
-                        // promotion = Piece.Pawn,
+                        promotion = Piece.Pawn,
                         previous = current
                     };
                 }

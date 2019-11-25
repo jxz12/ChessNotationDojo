@@ -33,17 +33,17 @@ public class Menu : MonoBehaviour
     {
         ShowAllProgress();
 
-        // boardClassical.FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1";
-        boardClassical.FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w AHah - 0 1";
+        boardClassical.FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1";
+        // boardClassical.FEN = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w AHah - 0 1";
         // boardClassical.FEN = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1";
         // boardClassical.FEN = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w ah - 0 1";
-        // boardClassical.FEN = "r2qkb1r/pp2nppp/3p4/2pNN1B1/2BnP3/3P4/PPP2PPP/R2bK2R w AHah - 1 0";
+        // boardClassical.FEN = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w AH - 1 8";
 
         StartCoroutine(Refresh960(.2f));
         boardHorde.FEN = "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w AH - 0 1";
         boardPeasants.FEN = "1nn1knn1/4p3/8/8/8/8/PPPPPPPP/4K3 w - - 0 1";
-        boardMicro.FEN = "knbr/p3/4/3P/RBNK w Da - 0 1";
-        boardDemi.FEN = "kbnr/pppp/4/4/4/4/pppp/KBNR w Aa - 0 1";
+        boardMicro.FEN = "knbr/p3/4/3P/RBNK w Ad - 0 1";
+        boardDemi.FEN = "kbnr/pppp/4/4/4/4/pppp/KBNR w Dd - 0 1";
         boardBaby.FEN = "kqbnr/ppppp/5/PPPPP/RNBQK w - - 0 1";
         boardDouble.FEN = "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w AHIPahip - 0 1";
     }
@@ -123,7 +123,7 @@ public class Menu : MonoBehaviour
           .Append((char)('A'+rightRook))
           .Append((char)('a'+leftRook))
           .Append((char)('a'+rightRook))
-          .Append(" -");
+          .Append(" - 0 1");
 
         sb.ToString();
         return sb.ToString();

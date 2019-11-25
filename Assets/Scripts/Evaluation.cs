@@ -29,6 +29,7 @@ public partial class Engine
                 if (current.type == Move.Special.EnPassant) EPs += 1;
                 if (current.type == Move.Special.Castle) castls += 1;
                 if (current.promotion != Piece.None
+                    && current.promotion != Piece.Pawn
                     && current.moved == Piece.Pawn) promos += 1;
                 if (IsCheck(current)) checks += 1;
 
@@ -50,10 +51,10 @@ public partial class Engine
     }
     private static Dictionary<Piece, int> pieceValues = new Dictionary<Piece, int>() {
         { Piece.None, 0 },
-        { Piece.VirginPawn, 1 },
         { Piece.Pawn, 1 },
-        { Piece.VirginRook, 5 },
+        { Piece.VirginPawn, 1 },
         { Piece.Rook, 5 },
+        { Piece.VirginRook, 5 },
         { Piece.Knight, 3 },
         { Piece.Bishop, 3 },
         { Piece.Queen, 9 },
