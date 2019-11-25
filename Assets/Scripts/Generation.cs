@@ -335,6 +335,7 @@ public partial class Engine
                                 target = rook,
                                 type = Move.Special.Castle,
                                 moved = Piece.VirginKing,
+                                promotion = Piece.King,
                                 previous = current
                             };
                         }

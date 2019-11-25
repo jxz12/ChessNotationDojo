@@ -181,7 +181,7 @@ public class GameManager : MonoBehaviour
                 continue;
 
             char c = move[idx];
-            print(move + " " + c);
+            // print(move + " " + c);
 
             if (c >= 'a' && c <= 'w')
             {
