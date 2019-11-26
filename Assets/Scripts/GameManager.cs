@@ -32,11 +32,7 @@ public class GameManager : MonoBehaviour
     }
 
     private Engine thomas;
-
-    // private BoardAscii board;
-    // [SerializeField] BoardAscii boardPrefab;
     [SerializeField] BoardAscii board;
-    // [SerializeField] Board3D board;
     
     [SerializeField] GameObject inputPrefab;
     List<Button> ranks;
@@ -59,16 +55,23 @@ public class GameManager : MonoBehaviour
         }
         this.OnSolved = OnSolved;
         if (PGN.Substring(0,4) == "1...")
+        {
             board.FlipBoard(true);
+            movesText.text = "1...";
+        }
         else
+        {
             board.FlipBoard(false);
+            movesText.text = "1.";
+        }
         
         quitButton.GetComponent<Image>().color = Color.red;
         StartGame(FEN, 2, false);
     }
-    public void StartFullGame(string FEN, int puush, bool castle960)
+    public void StartFullGame(string FEN, int puush, bool castle960, bool playBlack=false)
     {
         sequence = null;
+        movesText.text = "1.";
         StartGame(FEN, puush, castle960);
     }
 
@@ -222,7 +225,7 @@ public class GameManager : MonoBehaviour
             {
                 if (candidate == sequence.Peek())
                 {
-                    PlayMove(sequence.Dequeue());
+                    PlayMove(sequence.Dequeue(), false);
                     if (sequence.Count > 0)
                     {
                         StartCoroutine(WaitThenPlayMove(sequence.Dequeue(), 1));
@@ -241,14 +244,20 @@ public class GameManager : MonoBehaviour
                     // TODO: show escaping variation?
                     StartCoroutine(DisplayTitleForTime("WRONG", 1, Color.red, TMPro.FontStyles.Bold));
                     candidate = "";
+                    ShowPossibleChars();
                 }
             }
             else // not puzzle
             {
                 PlayMove(candidate);
+                // TODO: implement computer play
+                // PlayMove(thomas.EvaluateBestMove(2).Item1);
             }
         }
-        ShowPossibleChars();
+        else
+        {
+            ShowPossibleChars();
+        }
     }
 
     Stack<string> undos = new Stack<string>();
@@ -269,6 +278,10 @@ public class GameManager : MonoBehaviour
             }
             candidate = "";
             ShowPossibleChars();
+        }
+        else
+        {
+            DisableKeyboard();
         }
         undoButton.interactable = true;
         redoButton.interactable = false;
@@ -327,13 +340,14 @@ public class GameManager : MonoBehaviour
 
             undos.Push(redo);
             board.FEN = thomas.ToFEN();
-            if (sequence==null || redos.Count==0)
+            if (sequence==null || (sequence.Count>0 && redos.Count==0))
             {
                 ShowPossibleChars();
             }
         }
         redoButton.interactable = redos.Count > 0;
         undoButton.interactable = true;
+        WriteMoveSheet();
     }
     void UndoChar()
     {
@@ -348,12 +362,39 @@ public class GameManager : MonoBehaviour
         var moveList = new List<string>(undos);
         if (moveList.Count == 0)
         {
+            if (movesText.text.Length >= 4 && movesText.text.Substring(0,4) == "1...")
+                movesText.text = "1...";
+            else
+                movesText.text = "1.";
             return;
         }
-        var sb = new StringBuilder(moveList[moveList.Count-1]);
-        for (int i=moveList.Count-2; i>=0; i--)
+
+        var sb = new StringBuilder();
+        int i=moveList.Count-1;
+        if (movesText.text.Length >= 4 && movesText.text.Substring(0,4) == "1...")
         {
+            sb.Append("1... ").Append(moveList[i]);
+            i -= 1;
+        }
+        else
+        {
+            sb.Append("1. ").Append(moveList[i]);
+            i -= 1;
+            if (moveList.Count >= 2)
+            {
+                sb.Append(" ").Append(moveList[i]);
+                i -= 1;
+            }
+        }
+        int moveNum=2;
+        for (; i>=0; i--)
+        {
+            if (moveNum%2 == 0)
+            {
+                sb.Append(" ").Append(moveNum/2).Append(".");
+            }
             sb.Append(" ").Append(moveList[i]);
+            moveNum += 1;
         }
         movesText.text = sb.ToString();
     }

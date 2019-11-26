@@ -78,6 +78,7 @@ public partial class Engine
         {
             // FIXME: simple 2-ply with randomness added in!
             // int eval = NegaMax(legalMoves[algebraic], ply, -999, 999, prevMove.whiteMove?-1:1);
+
             int eval = UnityEngine.Random.Range(0,100);
             if (eval > bestEval)
             {
