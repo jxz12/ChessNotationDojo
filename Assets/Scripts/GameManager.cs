@@ -68,11 +68,18 @@ public class GameManager : MonoBehaviour
         quitButton.GetComponent<Image>().color = Color.red;
         StartGame(FEN, 2, false);
     }
-    public void StartFullGame(string FEN, int puush, bool castle960, bool playBlack=false)
+    bool? computerPlayingWhite = null;
+    public void StartFullGame(string FEN, int puush, bool castle960, bool? computerPlaysWhite=null)
     {
         sequence = null;
         movesText.text = "1.";
         StartGame(FEN, puush, castle960);
+
+        computerPlayingWhite = computerPlaysWhite;
+        if (computerPlayingWhite ?? false)
+        {
+            PlayComputerMove();
+        }
     }
 
     void StartGame(string FEN, int puush, bool castle960)
@@ -241,7 +248,6 @@ public class GameManager : MonoBehaviour
                 }
                 else
                 {
-                    // TODO: show escaping variation?
                     StartCoroutine(DisplayTitleForTime("WRONG", 1, Color.red, TMPro.FontStyles.Bold));
                     candidate = "";
                     ShowPossibleChars();
@@ -250,8 +256,6 @@ public class GameManager : MonoBehaviour
             else // not puzzle
             {
                 PlayMove(candidate);
-                // TODO: implement computer play
-                // PlayMove(thomas.EvaluateBestMove(2).Item1);
             }
         }
         else
@@ -287,6 +291,10 @@ public class GameManager : MonoBehaviour
         redoButton.interactable = false;
         WriteMoveSheet();
     }
+    void PlayComputerMove()
+    {
+        PlayMove(thomas.EvaluateBestMove(2).Item1);
+    }
     IEnumerator WaitThenPlayMove(string move, float seconds)
     {
         yield return new WaitForSeconds(seconds);
@@ -312,7 +320,7 @@ public class GameManager : MonoBehaviour
         {
             thomas.UndoLastMove();
             allCandidates = new HashSet<string>(thomas.GetPGNs());
-            candidate = sequence==null? "" : null;
+            candidate = sequence==null? "" : null; // this disables the keyboard
 
             redos.Push(undos.Pop());
             board.FEN = thomas.ToFEN();

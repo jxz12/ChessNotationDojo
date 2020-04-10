@@ -56,13 +56,17 @@ public class Menu : MonoBehaviour
         }
     }
 
-    // movement TODO: this may be slow
     Vector2 velocity;
     Vector2 targetPos;
     void FixedUpdate()
     {
         var rt = GetComponent<RectTransform>();
-        rt.anchoredPosition = Vector2.SmoothDamp(rt.anchoredPosition, targetPos, ref velocity, .2f);
+        float delta = (rt.anchoredPosition - targetPos).sqrMagnitude;
+        if (delta > .1f) {
+            rt.anchoredPosition = Vector2.SmoothDamp(rt.anchoredPosition, targetPos, ref velocity, .2f);
+        } else if (delta != 0) {
+            rt.anchoredPosition = targetPos;
+        }
     }
     public void Hide()
     {
@@ -73,6 +77,7 @@ public class Menu : MonoBehaviour
     {
         targetPos = Vector2.zero;
         GetComponent<CanvasGroup>().blocksRaycasts = true;
+        boardPuzzle.Clear();
     }
 
     ////////////// 
@@ -142,6 +147,10 @@ public class Menu : MonoBehaviour
         }
         throw new Exception("not enough empty squares remaining");
     }
+    bool? computerPlaysWhite = null;
+    public void SetPlayerVsPlayer() { computerPlaysWhite = null; }
+    public void SetWhiteVsComputer() { computerPlaysWhite = true; }
+    public void SetBlackVsComputer() { computerPlaysWhite = false; }
 
     ///////////// 
     // Puzzles //
@@ -252,8 +261,10 @@ public class Menu : MonoBehaviour
     {
         excludeSolved = exclude;
     }
+    [SerializeField] Button startPuzzleButton;
     public void ShowRandomPuzzle(int numMoves)
     {
+        startPuzzleButton.gameObject.SetActive(true);
         if (numMoves == 2)
         {
             ShowRandomPuzzle(puzzles2);
@@ -332,9 +343,26 @@ public class Menu : MonoBehaviour
         ChooseQuote();
         Hide();
     }
-    public void ClearPuzzlePreview()
+
+    //////////////
+    // navigation
+    [SerializeField] Canvas menuCanvas, splashCanvas, puzzlesCanvas, variantsCanvas;
+    public void GotoSplash()
     {
+        puzzlesCanvas.enabled = variantsCanvas.enabled = false;
+        splashCanvas.enabled = true;
+    }
+    public void GotoPuzzles()
+    {
+        startPuzzleButton.gameObject.SetActive(false);
         boardPuzzle.Clear();
+        splashCanvas.enabled = false;
+        puzzlesCanvas.enabled = true;
+    }
+    public void GotoVariants()
+    {
+        splashCanvas.enabled = false;
+        variantsCanvas.enabled = true;
     }
 
     ////////////

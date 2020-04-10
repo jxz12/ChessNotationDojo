@@ -121,6 +121,41 @@ public partial class Engine
         var enemies = whiteToMove? blackPieces : whitePieces;
         int forward = whiteToMove? NFiles : -NFiles;
 
+        // convenience function to check pawns for promotion
+        IEnumerable<Move> PromotionsIfPossible(Move pawnMove)
+        {
+            Move DeepCopyMove(Move toCopy)
+            {
+                return new Move() {
+                    previous = toCopy.previous,
+                    whiteMove = toCopy.whiteMove,
+                    source = toCopy.source,
+                    target = toCopy.target,
+                    type = toCopy.type,
+                    moved = toCopy.moved,
+                    captured = toCopy.captured,
+                    promotion = toCopy.promotion
+                };
+            }
+            int rank = GetRank(pawnMove.target);
+            if (rank == 0 || rank == NRanks-1)
+            {
+                // add possible promotions
+                pawnMove.promotion = Piece.Knight;
+                yield return DeepCopyMove(pawnMove);
+                pawnMove.promotion = Piece.Bishop;
+                yield return DeepCopyMove(pawnMove);
+                pawnMove.promotion = Piece.Rook;
+                yield return DeepCopyMove(pawnMove);
+                pawnMove.promotion = Piece.Queen;
+                yield return pawnMove;
+            }
+            else
+            {
+                yield return pawnMove;
+            }
+        }
+
         // go through each piece and generate moves
         for (int pos=0; pos<allies.Length; pos++)
         {
@@ -141,8 +176,9 @@ public partial class Engine
                         promotion = Piece.Pawn,
                         previous = current
                     };
-                    foreach (Move m in PromotionsIfPossible(push))
+                    foreach (Move m in PromotionsIfPossible(push)) {
                         yield return m;
+                    }
                     
                     // puush
                     if (allies[pos] == Piece.VirginPawn)
@@ -160,8 +196,9 @@ public partial class Engine
                                     promotion = Piece.Pawn,
                                     previous = current
                                 };
-                                foreach (Move m in PromotionsIfPossible(push)) // TODO: maybe stupid
+                                foreach (Move m in PromotionsIfPossible(push)) { // TODO: maybe stupid
                                     yield return m;
+                                }
                             }
                             else
                             {
@@ -188,8 +225,9 @@ public partial class Engine
                             promotion = Piece.Pawn,
                             previous = current
                         };
-                        foreach (Move m in PromotionsIfPossible(pysh))
+                        foreach (Move m in PromotionsIfPossible(pysh)) {
                             yield return m;
+                        }
                     }
                     else // virtual attacks for castle check
                     {
@@ -216,8 +254,9 @@ public partial class Engine
                             promotion = Piece.Pawn,
                             previous = current
                         };
-                        foreach (Move m in PromotionsIfPossible(pish))
+                        foreach (Move m in PromotionsIfPossible(pish)) {
                             yield return m;
+                        }
                     }
                     else // virtual attacks for castle check
                     {
@@ -345,40 +384,6 @@ public partial class Engine
         }
     }
 
-    private static Move DeepCopyMove(Move toCopy) // to make promotion simpler
-    {
-        return new Move() {
-            previous = toCopy.previous,
-            whiteMove = toCopy.whiteMove,
-            source = toCopy.source,
-            target = toCopy.target,
-            type = toCopy.type,
-            moved = toCopy.moved,
-            captured = toCopy.captured,
-            promotion = toCopy.promotion
-        };
-    }
-    // convenience function to check for promotion
-    private IEnumerable<Move> PromotionsIfPossible(Move pawnMove)
-    {
-        int rank = GetRank(pawnMove.target);
-        if (rank == 0 || rank == NRanks-1)
-        {
-            // add possible promotions
-            pawnMove.promotion = Piece.Knight;
-            yield return DeepCopyMove(pawnMove);
-            pawnMove.promotion = Piece.Bishop;
-            yield return DeepCopyMove(pawnMove);
-            pawnMove.promotion = Piece.Rook;
-            yield return DeepCopyMove(pawnMove);
-            pawnMove.promotion = Piece.Queen;
-            yield return pawnMove;
-        }
-        else
-        {
-            yield return pawnMove;
-        }
-    }
 
     // returns if current has moved into check
     private bool InCheck(Move current, IEnumerable<Move> nexts)
