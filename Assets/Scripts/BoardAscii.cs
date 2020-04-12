@@ -129,6 +129,11 @@ public class BoardAscii : MonoBehaviour
             GetComponent<GridLayoutGroup>().startCorner = GridLayoutGroup.Corner.LowerLeft;
         }
     }
+    public void ToggleFlipped()
+    {
+        bool currentFlip = GetComponent<GridLayoutGroup>().startCorner == GridLayoutGroup.Corner.UpperRight;
+        FlipBoard(!currentFlip);
+    }
     public void Clear()
     {
         foreach (Transform child in transform)

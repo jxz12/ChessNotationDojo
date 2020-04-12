@@ -56,26 +56,30 @@ public class Menu : MonoBehaviour
         }
     }
 
-    Vector2 velocity;
-    Vector2 targetPos;
+    Vector2 pivocity;
+    Vector2 targetPivot = new Vector2(.5f, 1);
     void FixedUpdate()
     {
         var rt = GetComponent<RectTransform>();
-        float delta = (rt.anchoredPosition - targetPos).sqrMagnitude;
-        if (delta > .1f) {
-            rt.anchoredPosition = Vector2.SmoothDamp(rt.anchoredPosition, targetPos, ref velocity, .2f);
+        float delta = (rt.pivot - targetPivot).sqrMagnitude;
+        if (delta > .0001f) {
+            rt.pivot = Vector2.SmoothDamp(rt.pivot, targetPivot, ref pivocity, .2f);
         } else if (delta != 0) {
-            rt.anchoredPosition = targetPos;
+            rt.pivot = targetPivot;
+            if (targetPivot.y == 0) {
+                menuCanvas.enabled = false;
+            }
         }
     }
     public void Hide()
     {
-        targetPos = new Vector2(0, GetComponentInParent<CanvasScaler>().referenceResolution.y);
+        targetPivot = new Vector2(.5f, 0);
         GetComponent<CanvasGroup>().blocksRaycasts = false;
     }
     public void Show()
     {
-        targetPos = Vector2.zero;
+        menuCanvas.enabled = true;
+        targetPivot = new Vector2(.5f, 1);
         GetComponent<CanvasGroup>().blocksRaycasts = true;
         boardPuzzle.Clear();
     }
