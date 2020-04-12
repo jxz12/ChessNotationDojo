@@ -49,49 +49,43 @@ public partial class Engine
             }
         }
     }
-    private static Dictionary<Piece, int> pieceValues = new Dictionary<Piece, int>() {
+    private static readonly Dictionary<Piece, float> pieceValues = new Dictionary<Piece, float>() {
         { Piece.None, 0 },
         { Piece.Pawn, 1 },
         { Piece.VirginPawn, 1 },
         { Piece.Rook, 5 },
         { Piece.VirginRook, 5 },
         { Piece.Knight, 3 },
-        { Piece.Bishop, 3 },
-        { Piece.Queen, 9 },
+        { Piece.Bishop, 3.1f },
+        { Piece.Queen, 9.5f },
         { Piece.King, 100 },
         { Piece.VirginKing, 100 },
     };
-    private int Evaluate(Move current)
+    private float Evaluate(Move current)
     {
-        int total = 0;
+        float total = 0;
         foreach (Piece p in whitePieces) total += pieceValues[p];
         foreach (Piece p in blackPieces) total -= pieceValues[p];
         return total;
     }
 
     // returns best move algebraic and evaluation
-    public Tuple<string, int> EvaluateBestMove(int ply)
+    public Dictionary<string, float> EvaluatePosition(int ply)
     {
-        int bestEval = -999;
-        string bestAlgebraic = null;
+        var evals = new Dictionary<string, float>();
         foreach (string algebraic in legalMoves.Keys)
         {
-            // FIXME: simple 2-ply with randomness added in!
-            // int eval = NegaMax(legalMoves[algebraic], ply, -999, 999, prevMove.whiteMove?-1:1);
-
-            int eval = UnityEngine.Random.Range(0,100);
-            if (eval > bestEval)
-            {
-                bestEval = eval;
-                bestAlgebraic = algebraic;
-            }
+            float eval = NegaMax(legalMoves[algebraic], ply, -999, 999, prevMove.whiteMove?-1:1);
+            evals[algebraic] = eval;
         }
-        return Tuple.Create(bestAlgebraic, bestEval);
+        return evals;
     }
-    private int NegaMax(Move current, int ply, int alpha, int beta, int colour)
+
+    private float NegaMax(Move current, int ply, float alpha, float beta, int colour)
     {
-        if (current.type == Move.Special.None) // TODO: so ugly...
+        if (current.type == Move.Special.None) { // TODO: so ugly...
             return -999;
+        }
 
         PlayMove(current);
         var nexts = new List<Move>(FindPseudoLegalMoves(current));
@@ -109,17 +103,35 @@ public partial class Engine
             }
             else
             {
-                int eval = -999;
                 foreach (Move next in nexts)
                 {
-                    eval = Math.Max(eval, -NegaMax(next, ply-1, -beta, -alpha, -colour));
-                    alpha = Math.Max(alpha, eval);
-                    if (alpha >= beta)
-                        break; // cut-off
+                    float score = -NegaMax(next, ply-1, -beta, -alpha, -colour);
+                    if (score >= beta) {
+                        UndoMove(current);
+                        return beta; // fail beta hard cutoff
+                    }
+                    if (score > alpha) {
+                        alpha = score;
+                    }
+                    // alpha = Math.Max(alpha, eval);
+                    // if (alpha >= beta) {
+                    //     break; // cut-off
+                    // }
                 }
-                // TODO: checkmate checks here probably
                 UndoMove(current);
-                return eval;
+                return alpha;
+
+                // float eval = -999;
+                // foreach (Move next in nexts)
+                // {
+                //     eval = Math.Max(eval, -NegaMax(next, ply-1, -beta, -alpha, -colour));
+                //     alpha = Math.Max(alpha, eval);
+                //     if (alpha >= beta) {
+                //         break; // cut-off
+                //     }
+                // }
+                // UndoMove(current);
+                // return eval;
             }
         }
     }

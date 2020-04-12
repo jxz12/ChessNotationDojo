@@ -14,7 +14,7 @@ public class Menu : MonoBehaviour
 {
     [SerializeField] GameManager gm;
     [SerializeField] TextAsset input2, input3, input4, quotes;
-    [SerializeField] TMPro.TextMeshProUGUI progress2, progress3, progress4;
+    [SerializeField] Button progress2, progress3, progress4;
     [SerializeField] BoardAscii boardPuzzle;
 
     [SerializeField] BoardAscii boardClassical, board960, boardHorde, boardPeasants,
@@ -43,7 +43,7 @@ public class Menu : MonoBehaviour
         boardHorde.FEN = "ppp2ppp/pppppppp/pppppppp/pppppppp/3pp3/8/PPPPPPPP/RNBQKBNR w AH - 0 1";
         boardPeasants.FEN = "1nn1knn1/4p3/8/8/8/8/PPPPPPPP/4K3 w - - 0 1";
         boardMicro.FEN = "knbr/p3/4/3P/RBNK w Ad - 0 1";
-        boardDemi.FEN = "kbnr/pppp/4/4/4/4/pppp/KBNR w Dd - 0 1";
+        boardDemi.FEN = "kbnr/pppp/4/4/4/4/PPPP/KBNR w Dd - 0 1";
         boardBaby.FEN = "kqbnr/ppppp/5/PPPPP/RNBQK w - - 0 1";
         boardDouble.FEN = "rnbqkbnrrnbqkbnr/pppppppppppppppp/88/88/88/88/88/88/88/88/PPPPPPPPPPPPPPPP/RNBQKBNRRNBQKBNR w AHIPahip - 0 1";
     }
@@ -62,7 +62,7 @@ public class Menu : MonoBehaviour
     {
         var rt = GetComponent<RectTransform>();
         float delta = (rt.pivot - targetPivot).sqrMagnitude;
-        if (delta > .0001f) {
+        if (delta > .000001f) {
             rt.pivot = Vector2.SmoothDamp(rt.pivot, targetPivot, ref pivocity, .2f);
         } else if (delta != 0) {
             rt.pivot = targetPivot;
@@ -97,7 +97,7 @@ public class Menu : MonoBehaviour
     public void StartDoubleChess() { StartFullGame(boardDouble.FEN, "Double Chess", 4, false); }
     public void StartFullGame(string FEN, string title, int puush, bool castle960)
     {
-        gm.StartFullGame(FEN, puush, castle960);
+        gm.StartFullGame(FEN, puush, castle960, computerPlaysWhite);
         gm.SetTitle(title);
         ChooseQuote();
         Hide();
@@ -152,9 +152,9 @@ public class Menu : MonoBehaviour
         throw new Exception("not enough empty squares remaining");
     }
     bool? computerPlaysWhite = null;
-    public void SetPlayerVsPlayer() { computerPlaysWhite = null; }
-    public void SetWhiteVsComputer() { computerPlaysWhite = true; }
-    public void SetBlackVsComputer() { computerPlaysWhite = false; }
+    public void SetPlayerVsPlayer(Toggle tog) { if (tog.isOn) computerPlaysWhite = null; }
+    public void SetWhiteVsComputer(Toggle tog) { if (tog.isOn) computerPlaysWhite = false; }
+    public void SetBlackVsComputer(Toggle tog) { if (tog.isOn) computerPlaysWhite = true; }
 
     ///////////// 
     // Puzzles //
@@ -182,8 +182,7 @@ public class Menu : MonoBehaviour
         }
         catch (Exception e)
         {
-            // print(e);
-            print("Save file not present, so reading from TextAsset");
+            print("Save file not present, so reading from TextAsset\nerror: " + e.Message);
             puzzles = new List<Puzzle>();
             foreach (string line in Regex.Split(input, "\r\n|\r|\n"))
             {
@@ -230,21 +229,28 @@ public class Menu : MonoBehaviour
     }
     void ShowAllProgress()
     {
+        void ShowProgress(List<Puzzle> puzzles, Button progress)
+        {
+            int total=0, solved=0;
+            foreach (Puzzle p in puzzles)
+            {
+                total += 1;
+                if (p.solved) {
+                    solved += 1;
+                }
+            }
+            var tmp = progress.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            tmp.text = solved+"/"+total;
+            tmp.color = Color.Lerp(Color.red, Color.green, (float)solved/total);
+
+            progress.interactable = (solved != total || !excludeSolved);
+        }
         ShowProgress(puzzles2, progress2);
         ShowProgress(puzzles3, progress3);
         ShowProgress(puzzles4, progress4);
-    }
-    void ShowProgress(List<Puzzle> puzzles, TMPro.TextMeshProUGUI progress)
-    {
-        int total=0, solved=0;
-        foreach (Puzzle p in puzzles)
-        {
-            total += 1;
-            if (p.solved)
-                solved += 1;
-        }
-        progress.text = solved+"/"+total;
-        progress.color = Color.Lerp(Color.red, Color.green, (float)solved/total);
+        boardPuzzle.Clear();
+        puzzleTitle.text = "";
+        startPuzzleButton.gameObject.SetActive(false);
     }
     public void ResetProgress()
     {
@@ -261,79 +267,75 @@ public class Menu : MonoBehaviour
         }
     }
 
-    public void SetExcludeSolved(bool exclude)
+    public bool excludeSolved=true;
+    public void SetExcludeSolved(Toggle tog)
     {
-        excludeSolved = exclude;
+        excludeSolved = tog.isOn;
+        ShowAllProgress();
     }
     [SerializeField] Button startPuzzleButton;
+    [SerializeField] TMPro.TextMeshProUGUI puzzleTitle;
     public void ShowRandomPuzzle(int numMoves)
     {
-        startPuzzleButton.gameObject.SetActive(true);
-        if (numMoves == 2)
+        void ShowPuzzle(List<Puzzle> choices)
         {
-            ShowRandomPuzzle(puzzles2);
-        }
-        else if (numMoves == 3)
-        {
-            ShowRandomPuzzle(puzzles3);
-        }
-        else if (numMoves == 4)
-        {
-            ShowRandomPuzzle(puzzles4);
-        }
-        else throw new Exception("wrong number of moves");
-    }
-    public bool excludeSolved=true;
-    Puzzle chosenPuzzle;
-    void ShowRandomPuzzle(List<Puzzle> choices)
-    {
-        int unsolved;
-        if (excludeSolved)
-        {
-            unsolved = 0;
+            int unsolved;
+            if (excludeSolved)
+            {
+                unsolved = 0;
+                foreach (Puzzle p in choices)
+                {
+                    if (!p.solved) {
+                        unsolved += 1;
+                    }
+                }
+            }
+            else
+            {
+                unsolved = choices.Count;
+            }
+
+            int choice = UnityEngine.Random.Range(0, unsolved);
+            int counter = 0;
+            chosenPuzzle = null;
             foreach (Puzzle p in choices)
             {
                 if (!p.solved)
-                    unsolved += 1;
-            }
-        }
-        else
-        {
-            unsolved = choices.Count;
-        }
-
-        if (unsolved == 0)
-        {
-            unsolved = choices.Count; // TODO: disable button from check at start
-        }
-        int choice = UnityEngine.Random.Range(0, unsolved);
-        int counter = 0;
-        chosenPuzzle = null;
-        foreach (Puzzle p in choices)
-        {
-            if (!p.solved)
-            {
-                if (counter == choice)
                 {
-                    chosenPuzzle = p;
-                    break;
+                    if (counter == choice)
+                    {
+                        chosenPuzzle = p;
+                        break;
+                    }
+                    counter += 1;
                 }
-                counter += 1;
+            }
+            if (chosenPuzzle != null)
+            {
+                boardPuzzle.FEN = chosenPuzzle.FEN;
+                if (chosenPuzzle.PGN.Substring(0,4) == "1...") {
+                    boardPuzzle.FlipBoard(true);
+                } else {
+                    boardPuzzle.FlipBoard(false);
+                }
+                puzzleTitle.text = chosenPuzzle.name;
+            }
+            else
+            {
+                throw new Exception("could not choose puzzle");
             }
         }
-        if (chosenPuzzle != null)
-        {
-            boardPuzzle.FEN = chosenPuzzle.FEN;
-            if (chosenPuzzle.PGN.Substring(0,4) == "1...")
-                boardPuzzle.FlipBoard(true);
-            else
-                boardPuzzle.FlipBoard(false);
+        if (numMoves == 2) {
+            ShowPuzzle(puzzles2);
+        } else if (numMoves == 3) {
+            ShowPuzzle(puzzles3);
+        } else if (numMoves == 4) {
+            ShowPuzzle(puzzles4);
+        } else { throw new Exception("wrong number of moves");
         }
-        else
-        {
-            throw new Exception("could not choose puzzle");
-        }
+        startPuzzleButton.gameObject.SetActive(true);
     }
+    Puzzle chosenPuzzle;
     public void StartChosenPuzzle()
     {
         if (chosenPuzzle == null)
@@ -358,8 +360,7 @@ public class Menu : MonoBehaviour
     }
     public void GotoPuzzles()
     {
-        startPuzzleButton.gameObject.SetActive(false);
-        boardPuzzle.Clear();
+        ShowAllProgress();
         splashCanvas.enabled = false;
         puzzlesCanvas.enabled = true;
     }

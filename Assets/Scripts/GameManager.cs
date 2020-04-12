@@ -2,8 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,7 +12,7 @@ public class GameManager : MonoBehaviour
 {
     [SerializeField] Button N, B, R, Q, K, x, eq, bksp;
     [SerializeField] HorizontalLayoutGroup ranksParent, filesParent;
-    [SerializeField] Button undoButton, redoButton, quitButton, evalButton;
+    [SerializeField] Button undoButton, redoButton, quitButton;
     [SerializeField] TMPro.TextMeshProUGUI titleText, movesText;
     [SerializeField] MessageScroller quoteScroller;
 
@@ -78,7 +78,7 @@ public class GameManager : MonoBehaviour
         StartGame(FEN, puush, castle960);
 
         computerPlayingWhite = computerPlaysWhite;
-        board.FlipBoard(!(computerPlayingWhite??true));
+        board.FlipBoard(computerPlayingWhite ?? false);
         if (computerPlayingWhite ?? false) {
             PlayComputerMove();
         }
@@ -86,8 +86,9 @@ public class GameManager : MonoBehaviour
 
     void StartGame(string FEN, int puush, bool castle960)
     {
-        if (thomas != null)
+        if (thomas != null) {
             ClearGame();
+        }
 
         thomas = new Engine(FEN, puush, castle960);
         files = new List<Button>();
@@ -119,8 +120,6 @@ public class GameManager : MonoBehaviour
         candidate = "";
         allCandidates = new HashSet<string>(thomas.GetPGNs());
         ShowPossibleChars();
-
-        // Perft(3);
     }
     public void SetQuote(string quote)
     {
@@ -144,25 +143,6 @@ public class GameManager : MonoBehaviour
         files.Clear();
     }
 
-    public async void Perft(int ply)
-    {
-        float start = Time.time;
-        int nodes = await Task.Run(()=> thomas.Perft(ply));
-        print(nodes);
-        print(Time.time - start);
-    }
-    public async void Evaluate(int ply)
-    {
-        float start = Time.time;
-
-        evalButton.interactable = false;
-        var best = await Task.Run(()=> thomas.EvaluateBestMove(ply));
-        evalButton.interactable = true;
-
-        print(best.Item1 + " " + best.Item2);
-        print(Time.time - start);
-    }
-
     void ShowPossibleChars()
     {
         DisableKeyboard();
@@ -184,7 +164,6 @@ public class GameManager : MonoBehaviour
                 continue;
 
             char c = move[idx];
-            // print(move + " " + c);
 
             if (c >= 'a' && c <= 'w') // collision with capture :(
             {
@@ -250,7 +229,6 @@ public class GameManager : MonoBehaviour
                     {
                         titleText.text = "Well done!";
                         quitButton.GetComponent<Image>().color = Color.green;
-                        // evalButton.interactable = false;
                         OnSolved.Invoke();
                     }
                 }
@@ -302,12 +280,23 @@ public class GameManager : MonoBehaviour
         redoButton.interactable = false;
         WriteMoveSheet();
     }
+    [SerializeField] int evaluationPly=2;
+    [SerializeField] float randomness=1f;
     void PlayComputerMove()
     {
+        DisableKeyboard();
         IEnumerator DelayThenPlayComputerMove()
         {
             yield return null;
-            PlayMove(thomas.EvaluateBestMove(2).Item1);
+            var evals = thomas.EvaluatePosition(evaluationPly);
+            var best = new KeyValuePair<string, float>(null, float.MinValue);
+            foreach (var eval in evals)
+            {
+                if (eval.Value+UnityEngine.Random.Range(-randomness/2,randomness/2) > best.Value) {
+                    best = eval;
+                }
+            }
+            PlayMove(best.Key);
         }
         StartCoroutine(DelayThenPlayComputerMove());
     }
@@ -410,12 +399,12 @@ public class GameManager : MonoBehaviour
                 i -= 1;
             }
         }
-        int moveNum=2;
+        int moveNum=1;
         for (; i>=0; i--)
         {
-            if (moveNum%2 == 0)
+            if (moveNum%2 != 0)
             {
-                sb.Append("\n").Append(moveNum/2).Append(".");
+                sb.Append("\n").Append((moveNum/2)+1).Append(".");
             }
             sb.Append(" ").Append(moveList[i]);
             moveNum += 1;
@@ -427,8 +416,6 @@ public class GameManager : MonoBehaviour
         if (movesRT.sizeDelta.y > movesParentRT.sizeDelta.y) {
             movesRT.pivot = new Vector2(.5f, 0);
             movesRT.anchoredPosition = Vector2.zero;
-        } else {
-            movesRT.pivot = new Vector2(.5f, .5f);
         }
     }
 }
