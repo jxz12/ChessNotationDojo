@@ -181,9 +181,11 @@ public partial class Engine
                     }
                     
                     // puush
-                    if (allies[pos] == Piece.VirginPawn)
+                    if (allies[pos] == Piece.VirginPawn && puush)
                     {
-                        for (int steps=2; steps<=puush; steps++)
+                        int maxSteps = whiteToMove? (NRanks/2-1 - GetRank(pos)) : (NRanks/2-1 - (NRanks-GetRank(pos)-1));
+                        // TODO: test this
+                        for (int steps=2; steps<=maxSteps; steps++)
                         {
                             if (!Occupied(pos+steps*forward))
                             {
@@ -439,25 +441,6 @@ public partial class Engine
         }
         return false;
     }
-
-    // FIXME: checks to test win conditions
-    // public bool Check()
-    // {
-    //     return IsCheck(prevMove);
-    // }
-    // public int NumPieces(bool white)
-    // {
-    //     if (white)
-    //     {
-    //         if count 
-    //         foreach (Piece p in whitePieces)
-    //         return whitePieces.Count;
-    //     }
-    //     else
-    //     {
-    //         return blackPieces.Count;
-    //     }
-    // }
 
     private void AddPiece(Piece type, int pos, bool white)
     {

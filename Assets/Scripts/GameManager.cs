@@ -66,12 +66,14 @@ public class GameManager : MonoBehaviour
         }
         
         quitButton.GetComponent<Image>().color = Color.red;
-        StartGame(FEN, 2, false);
+        StartGame(FEN, true, false);
     }
     bool? computerPlayingWhite = null;
-    public void StartFullGame(string FEN, int puush, bool castle960, bool? computerPlaysWhite=null)
+    public void StartFullGame(string FEN, bool puush, bool castle960, bool? computerPlaysWhite=null)
     {
         sequence = null;
+        undos.Clear();
+        redos.Clear();
         movesText.text = "1.";
 
         quitButton.GetComponent<Image>().color = Color.red;
@@ -79,18 +81,15 @@ public class GameManager : MonoBehaviour
 
         computerPlayingWhite = computerPlaysWhite;
         board.FlipBoard(computerPlayingWhite ?? false);
-        if (computerPlayingWhite ?? false) {
-            PlayComputerMove();
-        }
     }
 
-    void StartGame(string FEN, int puush, bool castle960)
+    void StartGame(string FEN, bool puush, bool castle960)
     {
         if (thomas != null) {
             ClearGame();
         }
-
         thomas = new Engine(FEN, puush, castle960);
+
         files = new List<Button>();
         for (int i=0; i<thomas.NFiles; i++)
         {
@@ -115,11 +114,15 @@ public class GameManager : MonoBehaviour
 
             ranks.Add(rank.GetComponent<Button>());
         }
-
         board.FEN = thomas.ToFEN();
-        candidate = "";
-        allCandidates = new HashSet<string>(thomas.GetPGNs());
-        ShowPossibleChars();
+
+        if (computerPlayingWhite ?? false) {
+            PlayComputerMove();
+        } else {
+            candidate = "";
+            allCandidates = new HashSet<string>(thomas.GetPGNs());
+            ShowPossibleChars();
+        }
     }
     public void SetQuote(string quote)
     {
@@ -280,19 +283,27 @@ public class GameManager : MonoBehaviour
         redoButton.interactable = false;
         WriteMoveSheet();
     }
-    [SerializeField] int evaluationPly=2;
-    [SerializeField] float randomness=1f;
+    [SerializeField] int evaluationPly=3;
+    [SerializeField] float stdDev=.2f;
     void PlayComputerMove()
     {
         DisableKeyboard();
         IEnumerator DelayThenPlayComputerMove()
         {
+            float Gaussian(float mu, float sigma)
+            {
+                float rand1 = UnityEngine.Random.Range(0.0f, 1.0f);
+                float rand2 = UnityEngine.Random.Range(0.0f, 1.0f);
+                float n = Mathf.Sqrt(-2.0f * Mathf.Log(rand1)) * Mathf.Cos((2.0f * Mathf.PI) * rand2);
+                return (mu + sigma * n);
+            }
             yield return null;
             var evals = thomas.EvaluatePosition(evaluationPly);
             var best = new KeyValuePair<string, float>(null, float.MinValue);
             foreach (var eval in evals)
             {
-                if (eval.Value+UnityEngine.Random.Range(-randomness/2,randomness/2) > best.Value) {
+                float noise = Gaussian(0, stdDev);
+                if (eval.Value+noise > best.Value) {
                     best = eval;
                 }
             }

@@ -83,8 +83,8 @@ public partial class Engine
 
     private float NegaMax(Move current, int ply, float alpha, float beta, int colour)
     {
-        if (current.type == Move.Special.None) { // TODO: so ugly...
-            return -999;
+        if (current.type == Move.Special.None) { // TODO: so ugly... why pawns why
+            return 999; // positive because of the -Negamax(...) call
         }
 
         PlayMove(current);
@@ -92,14 +92,15 @@ public partial class Engine
         if (InCheck(current, nexts)) // moving into check
         {
             UndoMove(current);
-            return -999;
+            return 999; // positive because of the -Negamax(...) call
         }
         else
         {
             if (ply == 0)
             {
+                float score = colour * Evaluate(current);
                 UndoMove(current);
-                return colour * Evaluate(current);
+                return score;
             }
             else
             {
@@ -113,10 +114,6 @@ public partial class Engine
                     if (score > alpha) {
                         alpha = score;
                     }
-                    // alpha = Math.Max(alpha, eval);
-                    // if (alpha >= beta) {
-                    //     break; // cut-off
-                    // }
                 }
                 UndoMove(current);
                 return alpha;

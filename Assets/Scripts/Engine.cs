@@ -40,31 +40,32 @@ public partial class Engine
     private int totalPly;
 
     // Chess is ugly, here are some examples:
-    //   castling is only on the home rank
-    //   where the fuck does the king go when castling?
-    //   double pawn push is only from home rank +- 1
-    //   what the fuck happens for en passant?
-    private int puush;
+    //   is castling only on the home rank?
+    //   where the heck does the king go when castling? (here I had to give 2 options for chess960)
+    //   double pawn push is only from home rank +- 1? 
+    //   do not get me started on en passant...
+    private bool puush;
     private bool castle960;
 
     public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1",
-                  int puush=2, bool castle960=false)
+                  bool puush=true, bool castle960=false)
     {
         // board = new Board();
         NRanks = FEN.Count(c=>c=='/') + 1;
         NFiles = 0;
         foreach (char c in FEN)
         {
-            if (c == '/')
+            if (c == '/') {
                 break;
-            else if (c >= '1' && c <= '9')
+            } else if (c >= '1' && c <= '9') {
                 NFiles += c - '0';
-            else
+            } else {
                 NFiles += 1;
+            }
         }
-        if (NFiles > 23 || NRanks > 16)
+        if (NFiles > 23 || NRanks > 16) {
             throw new Exception("cannot have more than 23x16 board (blame ASCII lol)");
-
+        }
         whitePieces = new Piece[NRanks*NFiles];
         blackPieces = new Piece[NRanks*NFiles];
 
@@ -77,9 +78,9 @@ public partial class Engine
             int pos = GetPos(rank, file);
             if (FEN[i] == '/')
             {
-                if (file != NFiles)
+                if (file != NFiles) {
                     throw new Exception("wrong number of squares in FEN rank " + rank);
-
+                }
                 rank -= 1;
                 file = -1;
             }
@@ -87,22 +88,20 @@ public partial class Engine
             {
                 file += FEN[i] - '1'; // -1 because file will be incremented regardless
             }
-            else if (FEN[i] == 'P') whitePieces[pos] = GetRank(pos)==1?
-                                                       Piece.VirginPawn:Piece.Pawn;
-            else if (FEN[i] == 'R') whitePieces[pos] = Piece.Rook;
-            else if (FEN[i] == 'N') whitePieces[pos] = Piece.Knight;
-            else if (FEN[i] == 'B') whitePieces[pos] = Piece.Bishop;
-            else if (FEN[i] == 'Q') whitePieces[pos] = Piece.Queen;
-            else if (FEN[i] == 'K') whitePieces[pos] = Piece.VirginKing;
+            else if (FEN[i] == 'P') { whitePieces[pos] = GetRank(pos)==1? Piece.VirginPawn:Piece.Pawn; }
+            else if (FEN[i] == 'R') { whitePieces[pos] = Piece.Rook; }
+            else if (FEN[i] == 'N') { whitePieces[pos] = Piece.Knight; }
+            else if (FEN[i] == 'B') { whitePieces[pos] = Piece.Bishop; }
+            else if (FEN[i] == 'Q') { whitePieces[pos] = Piece.Queen; }
+            else if (FEN[i] == 'K') { whitePieces[pos] = Piece.VirginKing; }
 
-            else if (FEN[i] == 'p') blackPieces[pos] = GetRank(pos)==NRanks-2?
-                                                       Piece.VirginPawn:Piece.Pawn;
-            else if (FEN[i] == 'r') blackPieces[pos] = Piece.Rook;
-            else if (FEN[i] == 'n') blackPieces[pos] = Piece.Knight;
-            else if (FEN[i] == 'b') blackPieces[pos] = Piece.Bishop;
-            else if (FEN[i] == 'q') blackPieces[pos] = Piece.Queen;
-            else if (FEN[i] == 'k') blackPieces[pos] = Piece.VirginKing;
-            else throw new Exception("unexpected character " + FEN[i] + " at " + i);
+            else if (FEN[i] == 'p') { blackPieces[pos] = GetRank(pos)==NRanks-2? Piece.VirginPawn:Piece.Pawn; }
+            else if (FEN[i] == 'r') { blackPieces[pos] = Piece.Rook; }
+            else if (FEN[i] == 'n') { blackPieces[pos] = Piece.Knight; }
+            else if (FEN[i] == 'b') { blackPieces[pos] = Piece.Bishop; }
+            else if (FEN[i] == 'q') { blackPieces[pos] = Piece.Queen; }
+            else if (FEN[i] == 'k') { blackPieces[pos] = Piece.VirginKing; }
+            else { throw new Exception("unexpected character " + FEN[i] + " at " + i); }
 
             i += 1;
         }
@@ -110,17 +109,18 @@ public partial class Engine
         // who to move
         prevMove = new Move();
         i += 1;
-        if (FEN[i] == 'w') prevMove.whiteMove = false;
-        else if (FEN[i] == 'b') prevMove.whiteMove = true;
-        else throw new Exception("unexpected character " + FEN[i] + " at " + i);
+        if (FEN[i] == 'w') { prevMove.whiteMove = false; }
+        else if (FEN[i] == 'b') { prevMove.whiteMove = true; }
+        else { throw new Exception("unexpected character " + FEN[i] + " at " + i); }
 
         // castling I HATE YOU
         i += 2;
         castles = new Dictionary<int, HashSet<int>>();
         for (int pos=0; pos<whitePieces.Length; pos++) // init hashsets
         {
-            if (whitePieces[pos] == Piece.VirginKing || blackPieces[pos] == Piece.VirginKing)
+            if (whitePieces[pos] == Piece.VirginKing || blackPieces[pos] == Piece.VirginKing) {
                 castles[pos] = new HashSet<int>();
+            }
         }
         while (FEN[i] != ' ') // add rooks
         {
@@ -160,7 +160,7 @@ public partial class Engine
                 }
             }
             else if (FEN[i] == '-') {}
-            else throw new Exception("unexpected character " + FEN[i] + " at " + i);
+            else { throw new Exception("unexpected character " + FEN[i] + " at " + i); }
 
             i += 1;
         }
@@ -172,10 +172,9 @@ public partial class Engine
             file = FEN[i] - 'a';
             rank = FEN[i] - '1';
 
-            if (file < 0 || file >= NFiles || rank < 0 || rank >= NRanks)
+            if (file < 0 || file >= NFiles || rank < 0 || rank >= NRanks) {
                 throw new Exception("unexpected character " + FEN[i] + " at " + i);
-            else
-            {
+            } else {
                 prevMove.moved = Piece.VirginPawn;
                 prevMove.source = prevMove.whiteMove? GetPos(1, file) : GetPos(NRanks-2, file);
                 prevMove.target = GetPos(rank, file);
@@ -255,9 +254,9 @@ public partial class Engine
         //     sb.Append(fuck castling);
         // if (prevMove.type == Move.Special.EnPassant)
         //     sb.Append("x").Append();
-        if (prevMove.promotion != Piece.None)
+        if (prevMove.promotion != Piece.None) {
             sb.Append(pieceStrings[prevMove.promotion]);
-
+        }
         return sb.ToString();
     }
     public void UndoLastMove()
@@ -336,8 +335,9 @@ public partial class Engine
                     sb.Append(empty);
                     empty = 0;
                 }
-                if (rank >= 0)
+                if (rank >= 0) {
                     sb.Append('/');
+                }
             }
         }
 
@@ -383,12 +383,13 @@ public partial class Engine
         }
 
         // en passant
-        if (prevMove.type == Move.Special.Puush)
+        if (prevMove.type == Move.Special.Puush) {
             sb.Append(' ')
               .Append((char)('a' + GetFile(prevMove.target)))
               .Append((char)('1' + GetRank(prevMove.target)));
-        else
+        } else {
             sb.Append(' ').Append("-");
+        }
 
         // half move clock
         sb.Append(' ').Append(prevMove.halfMoveClock);
@@ -421,9 +422,9 @@ public partial class Engine
         else
         {
             sb.Append(pieceStrings[move.moved]);
-            if (move.captured != Piece.None)
+            if (move.captured != Piece.None) {
                 sb.Append('x');
-
+            }
             sb.Append((char)('a'+(move.target%NFiles)));
             sb.Append((char)('1'+(move.target/NFiles)));
         }
@@ -436,9 +437,9 @@ public partial class Engine
 
         foreach (Move next in nexts)
         {
-            if (next.type == Move.Special.None)
+            if (next.type == Move.Special.None) {
                 continue;
-
+            }
             PlayMove(next);
             var nextnexts = FindPseudoLegalMoves(next);
 
@@ -500,5 +501,4 @@ public partial class Engine
         }
         return unambiguous;
     }
-
 }
