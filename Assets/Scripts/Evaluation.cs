@@ -41,95 +41,134 @@ public partial class Engine
                 int count = 0;
                 foreach (Move next in nexts)
                 {
-                    if (next.type != Move.Special.None)
+                    if (next.type != Move.Special.Null) {
                         count += Perft(next, ply-1);
+                    }
                 }
                 UndoMove(current);
                 return count;
             }
         }
     }
-    private static readonly Dictionary<Piece, float> pieceValues = new Dictionary<Piece, float>() {
-        { Piece.None, 0 },
-        { Piece.Pawn, 1 },
-        { Piece.VirginPawn, 1 },
-        { Piece.Rook, 5 },
-        { Piece.VirginRook, 5 },
-        { Piece.Knight, 3 },
-        { Piece.Bishop, 3.1f },
-        { Piece.Queen, 9.5f },
-        { Piece.King, 100 },
-        { Piece.VirginKing, 100 },
-    };
-    private float Evaluate(Move current)
-    {
-        float total = 0;
-        foreach (Piece p in whitePieces) total += pieceValues[p];
-        foreach (Piece p in blackPieces) total -= pieceValues[p];
-        return total;
-    }
 
-    // returns best move algebraic and evaluation
-    public Dictionary<string, float> EvaluatePosition(int ply)
+    // returns algebraic move and their evaluation
+    int quiescePly=4;
+    public Dictionary<string, int> EvaluatePosition(int negaMaxPly, int quiescePly=3)
     {
-        var evals = new Dictionary<string, float>();
+        if (negaMaxPly < 1 || quiescePly < 1) {
+            throw new Exception("cannot evaluate 0 moves ahead");
+        }
+        this.quiescePly = quiescePly;
+        
+        var evals = new Dictionary<string, int>();
         foreach (string algebraic in legalMoves.Keys)
         {
-            float eval = NegaMax(legalMoves[algebraic], ply, -999, 999, prevMove.whiteMove?-1:1);
+            // should never be null because it is already a legal move
+            int eval = (int)NegaMax(legalMoves[algebraic], negaMaxPly-1, -999999, 999999);
             evals[algebraic] = eval;
         }
         return evals;
     }
 
-    private float NegaMax(Move current, int ply, float alpha, float beta, int colour)
+    private int? NegaMax(Move current, int ply, int alpha, int beta)
     {
-        if (current.type == Move.Special.None) { // TODO: so ugly... why pawns why
-            return 999; // positive because of the -Negamax(...) call
+        if (current.type == Move.Special.Null) { // TODO: so ugly... why pawns why
+            return null;
+        }
+        if (ply == 0) {
+            return Quiesce(current, quiescePly-1, alpha, beta);
         }
 
+        PlayMove(current);
+        var nexts = new List<Move>(FindPseudoLegalMoves(current)); // save as list so calculations don't happen twice
+        if (InCheck(current, nexts)) // moving into check
+        {
+            UndoMove(current);
+            return null;
+        }
+        foreach (Move next in nexts)
+        {
+            int? eval = -NegaMax(next, ply-1, -beta, -alpha);
+            if (eval == null) {
+                continue;
+            }
+            int score = (int)eval;
+            if (score <= alpha) { 
+                UndoMove(current);
+                return alpha;
+            }
+            if (score < beta) {
+                beta = score;
+            }
+        }
+        UndoMove(current);
+        return beta;
+    }
+
+    private static readonly Dictionary<Piece, int> pieceValues = new Dictionary<Piece, int>() {
+        { Piece.None, 0 },
+        { Piece.Pawn, 100 },
+        { Piece.VirginPawn, 100 },
+        { Piece.Rook, 500 },
+        { Piece.VirginRook, 500 },
+        { Piece.Knight, 300 },
+        { Piece.Bishop, 310 },
+        { Piece.Queen, 950 },
+        { Piece.King, 10000 },
+        { Piece.VirginKing, 10000 },
+    };
+    private int Evaluate(Move current)
+    {
+        int total = 0;
+        foreach (Piece p in whitePieces) {
+            total += pieceValues[p];
+        }
+        foreach (Piece p in blackPieces) {
+            total -= pieceValues[p];
+        }
+        return current.whiteMove? total:-total;
+    }
+    private int? Quiesce(Move current, int ply, int alpha, int beta)
+    {
         PlayMove(current);
         var nexts = new List<Move>(FindPseudoLegalMoves(current));
         if (InCheck(current, nexts)) // moving into check
         {
             UndoMove(current);
-            return 999; // positive because of the -Negamax(...) call
+            return null;
         }
-        else
+
+        int standPat = Evaluate(current);
+        if (ply == 0) {
+            UndoMove(current);
+            return standPat;
+        }
+        if (standPat <= alpha) {
+            UndoMove(current);
+            return alpha;
+        }
+        if (standPat < beta) {
+            beta = standPat;
+        }
+        foreach (Move next in nexts)
         {
-            if (ply == 0)
-            {
-                float score = colour * Evaluate(current);
-                UndoMove(current);
-                return score;
+            if (next.captured == Piece.None) { // only consider captures, which means should not need to check for null moves 
+                continue;
             }
-            else
-            {
-                foreach (Move next in nexts)
-                {
-                    float score = -NegaMax(next, ply-1, -beta, -alpha, -colour);
-                    if (score >= beta) {
-                        UndoMove(current);
-                        return beta; // fail beta hard cutoff
-                    }
-                    if (score > alpha) {
-                        alpha = score;
-                    }
-                }
+            int? eval = -Quiesce(next, ply-1, -beta, -alpha);
+            if (eval == null) {
+                continue;
+            }
+            int score = (int)eval;
+            if (score <= alpha) {
                 UndoMove(current);
                 return alpha;
-
-                // float eval = -999;
-                // foreach (Move next in nexts)
-                // {
-                //     eval = Math.Max(eval, -NegaMax(next, ply-1, -beta, -alpha, -colour));
-                //     alpha = Math.Max(alpha, eval);
-                //     if (alpha >= beta) {
-                //         break; // cut-off
-                //     }
-                // }
-                // UndoMove(current);
-                // return eval;
+            }
+            if (score < beta) {
+                beta = score;
             }
         }
+        UndoMove(current);
+        return beta;
     }
 }

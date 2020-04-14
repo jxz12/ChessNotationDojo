@@ -18,17 +18,17 @@ public partial class Engine
     // a Move plus the board state is all the info needed for move generation
     private class Move
     {
-        public enum Special { None=0, Normal, Castle, Puush, EnPassant };
+        public enum Special { Null, Normal, Castle, Puush, EnPassant }; // FIXME: Null move is also used for pawns and castling
 
         public Move previous = null;
         public bool whiteMove = false;
         public int source = 0;
         public int target = 0;
-        public Special type = Special.None;
+        public Special type = Special.Null;
         public Piece moved = Piece.None;
         public Piece captured = Piece.None;
         public Piece promotion = Piece.None;
-        public int halfMoveClock = 0; // FIXME:
+        public int halfMoveClock = 0; // FIXME: check for draw after 50 moves
     }
 
     // board dimensions
@@ -63,8 +63,8 @@ public partial class Engine
                 NFiles += 1;
             }
         }
-        if (NFiles > 23 || NRanks > 16) {
-            throw new Exception("cannot have more than 23x16 board (blame ASCII lol)");
+        if (NFiles > 23 || NRanks > 12) {
+            throw new Exception("cannot have more than 23x12 board (blame ASCII lol)");
         }
         whitePieces = new Piece[NRanks*NFiles];
         blackPieces = new Piece[NRanks*NFiles];
@@ -437,7 +437,7 @@ public partial class Engine
 
         foreach (Move next in nexts)
         {
-            if (next.type == Move.Special.None) {
+            if (next.type == Move.Special.Null) {
                 continue;
             }
             PlayMove(next);

@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Diagnostics;
 using NUnit.Framework;
 using UnityEngine;
+using System.Text;
 using UnityEngine.TestTools;
 
 namespace Tests
@@ -16,34 +17,53 @@ namespace Tests
         static readonly string position4 = "r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w ah - 0 1";
         static readonly string position5 = "rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w AH - 1 8";
 
-        static readonly int ply=3;
         [Test]
         public void Perft()
         {
-            var thomas = new Engine(classicFEN);
-            var sw = new Stopwatch();
-
-            sw.Start();
-            int nodes = thomas.Perft(3);
-            sw.Stop();
-
-            Assert.IsTrue(nodes==8902);
-
-            MonoBehaviour.print($"n={nodes} t={sw.Elapsed}");
+            void DoPerft(string FEN, int ply, int nodes)
+            {
+                var thomas = new Engine(FEN);
+                var sw = new Stopwatch();
+                sw.Start();
+                int nodess = thomas.Perft(ply);
+                sw.Stop();
+                Assert.IsTrue(nodess==nodes);
+                MonoBehaviour.print($"n={nodes} t={sw.Elapsed}");
+            }
+            DoPerft(classicFEN, 4, 197281);
+            DoPerft(kiwiPete, 3, 97862);
+            DoPerft(position3, 4, 43238);
+            DoPerft(position4, 3, 9467);
+            DoPerft(position5, 3, 62379);
         }
         [Test]
         public void Evaluate()
         {
-            var thomas = new Engine(kiwiPete);
-            var sw = new Stopwatch();
-
-            sw.Start();
-            var evals = thomas.EvaluatePosition(2);
-            sw.Stop();
-            foreach (var kvp in evals)
+            void DoEval(string FEN, int nmPly, int qPly)
             {
-                MonoBehaviour.print($"{kvp.Key} {kvp.Value}");
+                var thomas = new Engine(FEN);
+                var sw = new Stopwatch();
+                sw.Start();
+                var evals = thomas.EvaluatePosition(nmPly, qPly);
+                sw.Stop();
+                var bob = new StringBuilder();
+                foreach (var kvp in evals)
+                {
+                    bob.Append($"{kvp.Key} {kvp.Value/100}, ");
+                }
+                bob.Append($"\n{sw.Elapsed}");
+                MonoBehaviour.print(bob.ToString());
             }
+
+            DoEval(kiwiPete, 1, 2);
+            DoEval(kiwiPete, 2, 2);
+            // DoEval("kr/2/2/KR w - - 0 1", 1);
+            // DoEval("kr/2/2/KR w - - 0 1", 2);
+        }
+        [Test]
+        public void PlayAgainstRandom()
+        {
+            // TODO:
         }
 
         [Test]

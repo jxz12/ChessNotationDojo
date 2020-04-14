@@ -40,7 +40,6 @@ public class BoardAscii : MonoBehaviour
                 squares.Add(square.GetComponentInChildren<TMPro.TextMeshProUGUI>());
             }
         }
-        // GetComponent<AspectRatioFitter>().aspectRatio = (float)nFiles/nRanks;
     }
     private string fen;
     public string FEN {
@@ -51,14 +50,15 @@ public class BoardAscii : MonoBehaviour
             int nFilesNew = 0;
             foreach (char c in fen)
             {
-                if (c == '/')
+                if (c == '/') {
                     break;
-                else if (c >= '1' && c <= '9')
+                } else if (c >= '1' && c <= '9') {
                     nFilesNew += c - '0';
-                else
+                } else {
                     nFilesNew += 1;
+                }
             }
-            if (nRanksNew != nRanks || nFilesNew != nRanks)
+            if (nRanksNew != nRanks || nFilesNew != nFiles)
             {
                 nRanks = nRanksNew;
                 nFiles = nFilesNew;
@@ -81,9 +81,9 @@ public class BoardAscii : MonoBehaviour
                 }
                 if (c == '/')
                 {
-                    if (file != nFiles)
+                    if (file != nFiles) {
                         throw new Exception("wrong number of squares in FEN rank " + rank);
-
+                    }
                     rank -= 1;
                     file = -1;
                 }
@@ -120,12 +120,9 @@ public class BoardAscii : MonoBehaviour
     };
     public void FlipBoard(bool flipped)
     {
-        if (flipped)
-        {
+        if (flipped) {
             GetComponent<GridLayoutGroup>().startCorner = GridLayoutGroup.Corner.UpperRight;
-        }
-        else
-        {
+        } else {
             GetComponent<GridLayoutGroup>().startCorner = GridLayoutGroup.Corner.LowerLeft;
         }
     }
@@ -136,8 +133,7 @@ public class BoardAscii : MonoBehaviour
     }
     public void Clear()
     {
-        foreach (Transform child in transform)
-        {
+        foreach (Transform child in transform) {
             Destroy(child.gameObject);
         }
         squares?.Clear();

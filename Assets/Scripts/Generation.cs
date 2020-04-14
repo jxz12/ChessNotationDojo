@@ -236,7 +236,7 @@ public partial class Engine
                         yield return new Move() {
                             source = pos,
                             target = attack,
-                            type = Move.Special.None,
+                            type = Move.Special.Null,
                         };
                     }
                 }
@@ -265,7 +265,7 @@ public partial class Engine
                         yield return new Move() {
                             source = pos,
                             target = attack,
-                            type = Move.Special.None,
+                            type = Move.Special.Null,
                         };
                     }
                 }
@@ -444,9 +444,9 @@ public partial class Engine
 
     private void AddPiece(Piece type, int pos, bool white)
     {
-        if (Occupied(pos))
+        if (Occupied(pos)) {
             throw new Exception("sorry " + type + ", " + pos + " occupado");
-
+        }
         if (white)
         {
             whitePieces[pos] = type;
@@ -473,9 +473,9 @@ public partial class Engine
 
     private void PlayMove(Move move)
     {
-        if (move.type == Move.Special.None)
+        if (move.type == Move.Special.Null) {
             return;
-
+        }
         // capture target
         if (move.captured != Piece.None)
         {
@@ -522,9 +522,9 @@ public partial class Engine
     }
     private void UndoMove(Move move)
     {
-        if (move.type == Move.Special.None)
+        if (move.type == Move.Special.Null) {
             return;
-
+        }
         // move back source
         if (move.type == Move.Special.Castle)
         {

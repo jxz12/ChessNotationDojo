@@ -66,7 +66,7 @@ public class GameManager : MonoBehaviour
         }
         
         quitButton.GetComponent<Image>().color = Color.red;
-        StartGame(FEN, true, false);
+        InitBoard(FEN, true, false);
     }
     bool? computerPlayingWhite = null;
     public void StartFullGame(string FEN, bool puush, bool castle960, bool? computerPlaysWhite=null)
@@ -77,16 +77,32 @@ public class GameManager : MonoBehaviour
         movesText.text = "1.";
 
         quitButton.GetComponent<Image>().color = Color.red;
-        StartGame(FEN, puush, castle960);
+        InitBoard(FEN, puush, castle960);
 
         computerPlayingWhite = computerPlaysWhite;
         board.FlipBoard(computerPlayingWhite ?? false);
+
+        if (computerPlayingWhite ?? false) {
+            PlayComputerMove();
+        } else {
+            candidate = "";
+            allCandidates = new HashSet<string>(thomas.GetPGNs());
+            ShowPossibleChars();
+        }
     }
 
-    void StartGame(string FEN, bool puush, bool castle960)
+    void InitBoard(string FEN, bool puush, bool castle960)
     {
-        if (thomas != null) {
-            ClearGame();
+        if (thomas != null)
+        {
+            foreach (var rank in ranks) {
+                Destroy(rank.gameObject);
+            }
+            ranks.Clear();
+            foreach (var file in files) {
+                Destroy(file.gameObject);
+            }
+            files.Clear();
         }
         thomas = new Engine(FEN, puush, castle960);
 
@@ -115,35 +131,16 @@ public class GameManager : MonoBehaviour
             ranks.Add(rank.GetComponent<Button>());
         }
         board.FEN = thomas.ToFEN();
-
-        if (computerPlayingWhite ?? false) {
-            PlayComputerMove();
-        } else {
-            candidate = "";
-            allCandidates = new HashSet<string>(thomas.GetPGNs());
-            ShowPossibleChars();
-        }
     }
     public void SetQuote(string quote)
     {
         quoteScroller.SetText(quote);
     }
+    string givenTitle = "";
     public void SetTitle(string title)
     {
+        givenTitle = title;
         titleText.text = title;
-    }
-    void ClearGame()
-    {
-        foreach (var rank in ranks)
-        {
-            Destroy(rank.gameObject);
-        }
-        ranks.Clear();
-        foreach (var file in files)
-        {
-            Destroy(file.gameObject);
-        }
-        files.Clear();
     }
 
     void ShowPossibleChars()
@@ -153,8 +150,10 @@ public class GameManager : MonoBehaviour
         // check for win conditions
         if (allCandidates.Count == 0) {
             quitButton.GetComponent<Image>().color = Color.green;
+            titleText.text = "GAME OVER";
         } else {
             quitButton.GetComponent<Image>().color = Color.red;
+            titleText.text = givenTitle;
         }
         if (candidate == null) {
             return; // candidate is set to null when a puzzle is over 
@@ -168,11 +167,11 @@ public class GameManager : MonoBehaviour
 
             char c = move[idx];
 
-            if (c >= 'a' && c <= 'w') // collision with capture :(
+            if (c >= 'a' && c <= 'w') // collision with capture if 'x' :(
             {
                 files[c - 'a'].interactable = true;
             }
-            else if (c >= '1' && c <= '@') // @ is '0'+16
+            else if (c >= '1' && c <= '<') // collision with promotion if '=' :(
             {
                 ranks[c - '1'].interactable = true;
             }
@@ -283,13 +282,16 @@ public class GameManager : MonoBehaviour
         redoButton.interactable = false;
         WriteMoveSheet();
     }
-    [SerializeField] int evaluationPly=3;
-    [SerializeField] float stdDev=.2f;
+    [SerializeField] int evaluationPly=2;
+    [SerializeField] float centipawnStdDev=20;
     void PlayComputerMove()
     {
         DisableKeyboard();
         IEnumerator DelayThenPlayComputerMove()
         {
+            yield return null;
+
+            // add a little noise to make the engine a bit random
             float Gaussian(float mu, float sigma)
             {
                 float rand1 = UnityEngine.Random.Range(0.0f, 1.0f);
@@ -297,16 +299,18 @@ public class GameManager : MonoBehaviour
                 float n = Mathf.Sqrt(-2.0f * Mathf.Log(rand1)) * Mathf.Cos((2.0f * Mathf.PI) * rand2);
                 return (mu + sigma * n);
             }
-            yield return null;
             var evals = thomas.EvaluatePosition(evaluationPly);
             var best = new KeyValuePair<string, float>(null, float.MinValue);
+            var bob = new StringBuilder();
             foreach (var eval in evals)
             {
-                float noise = Gaussian(0, stdDev);
+                float noise = Gaussian(0, centipawnStdDev);
+                bob.Append($"{eval.Key} {eval.Value} {noise}, ");
                 if (eval.Value+noise > best.Value) {
-                    best = eval;
+                    best = new KeyValuePair<string, float>(eval.Key, eval.Value+noise);
                 }
             }
+            print(bob.ToString());
             PlayMove(best.Key);
         }
         StartCoroutine(DelayThenPlayComputerMove());

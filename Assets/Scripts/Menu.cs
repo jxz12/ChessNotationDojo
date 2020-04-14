@@ -46,7 +46,9 @@ public class Menu : MonoBehaviour
     {
         while (true)
         {
-            board960.FEN = Chess960();
+            if (menuCanvas.enabled) {
+                board960.FEN = Chess960();
+            }
             yield return new WaitForSeconds(delay);
         }
     }
