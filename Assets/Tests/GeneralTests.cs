@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Diagnostics;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.UI;
 using System.Text;
 using UnityEngine.TestTools;
 
@@ -86,6 +87,15 @@ namespace Tests
             {
                 // MonoBehaviour.print($"{type.Name} {field.Name} {field.GetValue(monoB)}");
                 Assert.IsNotNull(field.GetValue(monoB), $"SerializeField {field.Name} in {monoB.name} is null");
+            }
+        }
+        [Test]
+        public void NavigationDisabled()
+        {
+            foreach (var selectable in MonoBehaviour.FindObjectsOfType<Selectable>())
+            {
+                Assert.IsTrue(selectable.navigation.mode == Navigation.Mode
+                .None, $"{selectable.name} has navigation enabled");
             }
         }
     }
