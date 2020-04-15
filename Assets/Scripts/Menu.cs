@@ -79,6 +79,8 @@ public class Menu : MonoBehaviour
         targetPivot = new Vector2(.5f, 1);
         GetComponent<CanvasGroup>().blocksRaycasts = true;
         boardPuzzle.Clear();
+        startPuzzleButton.gameObject.SetActive(false);
+        puzzleTitle.text = "";
     }
 
     ////////////// 
@@ -328,8 +330,7 @@ public class Menu : MonoBehaviour
             ShowPuzzle(puzzles3);
         } else if (numMoves == 4) {
             ShowPuzzle(puzzles4);
-        } else { throw new Exception("wrong number of moves");
-        }
+        } else { throw new Exception("wrong number of moves"); }
         startPuzzleButton.gameObject.SetActive(true);
     }
     Puzzle chosenPuzzle;

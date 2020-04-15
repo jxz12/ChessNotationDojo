@@ -65,18 +65,16 @@ public class GameManager : MonoBehaviour
             movesText.text = "1.";
         }
         
-        quitButton.GetComponent<Image>().color = Color.red;
+        computerPlayingWhite = null;
         InitBoard(FEN, true, false);
+        ResetCandidates();
     }
     bool? computerPlayingWhite = null;
     public void StartFullGame(string FEN, bool puush, bool castle960, bool? computerPlaysWhite=null)
     {
         sequence = null;
-        undos.Clear();
-        redos.Clear();
         movesText.text = "1.";
 
-        quitButton.GetComponent<Image>().color = Color.red;
         InitBoard(FEN, puush, castle960);
 
         computerPlayingWhite = computerPlaysWhite;
@@ -85,9 +83,7 @@ public class GameManager : MonoBehaviour
         if (computerPlayingWhite ?? false) {
             PlayComputerMove();
         } else {
-            candidate = "";
-            allCandidates = new HashSet<string>(thomas.GetPGNs());
-            ShowPossibleChars();
+            ResetCandidates();
         }
     }
 
@@ -131,6 +127,11 @@ public class GameManager : MonoBehaviour
             ranks.Add(rank.GetComponent<Button>());
         }
         board.FEN = thomas.ToFEN();
+        undos.Clear();
+        redos.Clear();
+        undoButton.interactable = false;
+        redoButton.interactable = false;
+        quitButton.GetComponent<Image>().color = Color.red;
     }
     public void SetQuote(string quote)
     {
@@ -147,14 +148,6 @@ public class GameManager : MonoBehaviour
     {
         DisableKeyboard();
 
-        // check for win conditions
-        if (allCandidates.Count == 0) {
-            quitButton.GetComponent<Image>().color = Color.green;
-            titleText.text = "GAME OVER";
-        } else {
-            quitButton.GetComponent<Image>().color = Color.red;
-            titleText.text = givenTitle;
-        }
         if (candidate == null) {
             return; // candidate is set to null when a puzzle is over 
         }
@@ -162,9 +155,9 @@ public class GameManager : MonoBehaviour
         bksp.interactable = candidate.Length > 0;
         foreach (string move in allCandidates)
         {
-            if (move.Length <= idx || move.Substring(0,idx) != candidate)
+            if (move.Length <= idx || move.Substring(0,idx) != candidate) {
                 continue;
-
+            }
             char c = move[idx];
 
             if (c >= 'a' && c <= 'w') // collision with capture if 'x' :(
@@ -175,14 +168,14 @@ public class GameManager : MonoBehaviour
             {
                 ranks[c - '1'].interactable = true;
             }
-            else if (c == 'N') N.interactable = true;
-            else if (c == 'B') B.interactable = true;
-            else if (c == 'R') R.interactable = true;
-            else if (c == 'Q') Q.interactable = true;
-            else if (c == 'K') K.interactable = true;
-            else if (c == 'x') x.interactable = true;
-            else if (c == '=') eq.interactable = true;
-            else throw new Exception("Unexpected input " + c);
+            else if (c == 'N') { N.interactable = true; }
+            else if (c == 'B') { B.interactable = true; }
+            else if (c == 'R') { R.interactable = true; }
+            else if (c == 'Q') { Q.interactable = true; }
+            else if (c == 'K') { K.interactable = true; }
+            else if (c == 'x') { x.interactable = true; }
+            else if (c == '=') { eq.interactable = true; }
+            else { throw new Exception("Unexpected input " + c); }
         }
     }
     void DisableKeyboard()
@@ -204,10 +197,35 @@ public class GameManager : MonoBehaviour
             b.interactable = false;
         }
     }
+    void ResetCandidates()
+    {
+        allCandidates = new HashSet<string>(thomas.GetPGNs());
+        candidate = "";
+
+        if (sequence!=null && redos.Count > 0) {
+            candidate = null;
+        }
+        if (computerPlayingWhite != null && ((bool)computerPlayingWhite==(undos.Count%2==0))) {
+            candidate = null;
+        }
+        ShowPossibleChars();
+
+        if (sequence == null)
+        {
+            if (allCandidates.Count == 0) {
+                quitButton.GetComponent<Image>().color = Color.green;
+                titleText.text = "GAME OVER";
+            } else {
+                quitButton.GetComponent<Image>().color = Color.red;
+                titleText.text = givenTitle;
+            }
+        }
+    }
     void InputChar(char input)
     {
-        if (thomas == null)
+        if (thomas == null) {
             return;
+        }
         if (input == '\b')
         {
             UndoChar();
@@ -237,8 +255,7 @@ public class GameManager : MonoBehaviour
                 else
                 {
                     StartCoroutine(DisplayTitleForTime("WRONG", 1, Color.red, TMPro.FontStyles.Bold));
-                    candidate = "";
-                    ShowPossibleChars();
+                    ResetCandidates();
                 }
             }
             else // not puzzle
@@ -270,9 +287,7 @@ public class GameManager : MonoBehaviour
         board.FEN = thomas.ToFEN();
         if (updateKeyboard)
         {
-            allCandidates = new HashSet<string>(thomas.GetPGNs());
-            candidate = "";
-            ShowPossibleChars();
+            ResetCandidates();
         }
         else
         {
@@ -282,7 +297,7 @@ public class GameManager : MonoBehaviour
         redoButton.interactable = false;
         WriteMoveSheet();
     }
-    [SerializeField] int evaluationPly=2;
+    [SerializeField] int evaluationPly=2, quiescencePly=3;
     [SerializeField] float centipawnStdDev=20;
     void PlayComputerMove()
     {
@@ -299,18 +314,18 @@ public class GameManager : MonoBehaviour
                 float n = Mathf.Sqrt(-2.0f * Mathf.Log(rand1)) * Mathf.Cos((2.0f * Mathf.PI) * rand2);
                 return (mu + sigma * n);
             }
-            var evals = thomas.EvaluatePosition(evaluationPly);
+            var evals = thomas.EvaluatePosition(evaluationPly, quiescencePly);
             var best = new KeyValuePair<string, float>(null, float.MinValue);
-            var bob = new StringBuilder();
+            // var bob = new StringBuilder();
             foreach (var eval in evals)
             {
                 float noise = Gaussian(0, centipawnStdDev);
-                bob.Append($"{eval.Key} {eval.Value} {noise}, ");
+                // bob.Append($"{eval.Key} {eval.Value} {noise}, ");
                 if (eval.Value+noise > best.Value) {
                     best = new KeyValuePair<string, float>(eval.Key, eval.Value+noise);
                 }
             }
-            print(bob.ToString());
+            // print(bob.ToString());
             PlayMove(best.Key);
         }
         StartCoroutine(DelayThenPlayComputerMove());
@@ -339,22 +354,14 @@ public class GameManager : MonoBehaviour
         if (undos.Count > 0)
         {
             thomas.UndoLastMove();
-            allCandidates = new HashSet<string>(thomas.GetPGNs());
-            candidate = sequence==null? "" : null; // this disables the keyboard
 
             redos.Push(undos.Pop());
             board.FEN = thomas.ToFEN();
-            if (sequence == null)
-            {
-                ShowPossibleChars();
-            }
-            else
-            {
-                DisableKeyboard();
-            }
+            ResetCandidates();
+            
+            redoButton.interactable = true;
+            undoButton.interactable = undos.Count > 0;
         }
-        redoButton.interactable = true;
-        undoButton.interactable = undos.Count > 0;
         WriteMoveSheet();
     }
     void RedoMove()
@@ -363,25 +370,21 @@ public class GameManager : MonoBehaviour
         {
             string redo = redos.Pop();
             thomas.PlayPGN(redo);
-            allCandidates = new HashSet<string>(thomas.GetPGNs());
-            candidate = sequence==null || redos.Count==0? "" : null;
 
             undos.Push(redo);
             board.FEN = thomas.ToFEN();
-            if (sequence==null || (sequence.Count>0 && redos.Count==0))
-            {
-                ShowPossibleChars();
-            }
+            ResetCandidates();
+
+            redoButton.interactable = redos.Count > 0;
+            undoButton.interactable = true;
         }
-        redoButton.interactable = redos.Count > 0;
-        undoButton.interactable = true;
         WriteMoveSheet();
     }
     void UndoChar()
     {
-        if (candidate.Length == 0)
+        if (candidate.Length == 0) {
             return;
-        
+        }
         candidate = candidate.Substring(0, candidate.Length-1);
         ShowPossibleChars();
     }
@@ -390,10 +393,11 @@ public class GameManager : MonoBehaviour
         var moveList = new List<string>(undos);
         if (moveList.Count == 0)
         {
-            if (movesText.text.Length >= 4 && movesText.text.Substring(0,4) == "1...")
+            if (movesText.text.Length >= 4 && movesText.text.Substring(0,4) == "1...") {
                 movesText.text = "1...";
-            else
+            } else {
                 movesText.text = "1.";
+            }
             return;
         }
 
