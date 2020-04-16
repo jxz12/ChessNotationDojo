@@ -7,7 +7,6 @@
 [Ll]ogs/
 [Pp]ackages/
 /[Bb]uild/
-TextMesh\ Pro/
 Tests/
 sysinfo.txt
 *.stackdump
@@ -39,3 +38,6 @@ sysinfo.txt
 ehthumbs.db
 [Tt]humbs.db
 [Dd]esktop.ini
+
+TextMesh\ Pro/
+TextMesh\ Pro.meta
