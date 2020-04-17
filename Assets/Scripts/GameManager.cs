@@ -390,7 +390,7 @@ public class GameManager : MonoBehaviour
     }
     void WriteMoveSheet()
     {
-        var moveList = new List<string>(undos);
+        var moveList = new List<string>(undos.Reverse());
         if (moveList.Count == 0)
         {
             if (movesText.text.Length >= 4 && movesText.text.Substring(0,4) == "1...") {
@@ -402,31 +402,31 @@ public class GameManager : MonoBehaviour
         }
 
         var sb = new StringBuilder();
-        int i=moveList.Count-1;
+        int i=0;
         if (movesText.text.Length >= 4 && movesText.text.Substring(0,4) == "1...")
         {
             sb.Append("1... ").Append(moveList[i]);
-            i -= 1;
+            i += 1;
         }
         else
         {
             sb.Append("1. ").Append(moveList[i]);
-            i -= 1;
+            i += 1;
             if (moveList.Count >= 2)
             {
                 sb.Append(" ").Append(moveList[i]);
-                i -= 1;
+                i += 1;
             }
         }
-        int moveNum=1;
-        for (; i>=0; i--)
+        int halfMoveNum = 3;
+        for (; i<moveList.Count; i++)
         {
-            if (moveNum%2 != 0)
+            if (halfMoveNum%2 != 0)
             {
-                sb.Append("\n").Append((moveNum/2)+1).Append(".");
+                sb.Append("\n").Append(halfMoveNum/2+1).Append(".");
             }
             sb.Append(" ").Append(moveList[i]);
-            moveNum += 1;
+            halfMoveNum += 1;
         }
         movesText.text = sb.ToString();
 
