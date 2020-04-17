@@ -86,17 +86,17 @@ public class Menu : MonoBehaviour
     ////////////// 
     // VARIANTS //
     //////////////
-    public void StartClassical() { StartFullGame(boardClassical.FEN, "Classical", true, false); }
-    public void StartChess960() { StartFullGame(board960.FEN, "Chess960", true, true); }
-    public void StartHordeChess() { StartFullGame(boardHorde.FEN, "Horde Chess", false, false); }
-    public void StartPeasantsRevolt() { StartFullGame(boardClassical.FEN, "Peasant's Revolt", true, false); }
-    public void StartMicroChess() { StartFullGame(boardMicro.FEN, "Micro Chess", false, false); }
-    public void StartDemiChess() { StartFullGame(boardDemi.FEN, "Demi-Chess", true, false); }
-    public void StartBabyChess() { StartFullGame(boardBaby.FEN, "Baby Chess", false, false); }
-    public void StartDoubleChess() { StartFullGame(boardDouble.FEN, "Double Chess", false, false); }
-    public void StartFullGame(string FEN, string title, bool puush, bool castle960)
+    public void StartClassical() { StartFullGame(boardClassical.FEN, "Classical", false); }
+    public void StartChess960() { StartFullGame(board960.FEN, "Chess960", true); }
+    public void StartHordeChess() { StartFullGame(boardHorde.FEN, "Horde Chess", false); }
+    public void StartPeasantsRevolt() { StartFullGame(boardPeasants.FEN, "Peasant's Revolt", false); }
+    public void StartMicroChess() { StartFullGame(boardMicro.FEN, "Micro Chess", false); }
+    public void StartDemiChess() { StartFullGame(boardDemi.FEN, "Demi-Chess", false); }
+    public void StartBabyChess() { StartFullGame(boardBaby.FEN, "Baby Chess", false); }
+    public void StartDoubleChess() { StartFullGame(boardDouble.FEN, "Double Chess", false); }
+    public void StartFullGame(string FEN, string title, bool castle960)
     {
-        gm.StartFullGame(FEN, puush, castle960, computerPlaysWhite);
+        gm.StartFullGame(FEN, castle960, computerPlaysWhite);
         gm.SetTitle(title);
         ChooseQuote();
         Hide();

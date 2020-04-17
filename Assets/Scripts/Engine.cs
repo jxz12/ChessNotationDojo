@@ -44,11 +44,9 @@ public partial class Engine
     //   where the heck does the king go when castling? (here I had to give 2 options for chess960)
     //   double pawn push is only from home rank +- 1? 
     //   do not get me started on en passant...
-    private bool puush;
     private bool castle960;
 
-    public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1",
-                  bool puush=true, bool castle960=false)
+    public Engine(string FEN="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w AHah - 0 1", bool castle960=false)
     {
         // board = new Board();
         NRanks = FEN.Count(c=>c=='/') + 1;
@@ -88,14 +86,14 @@ public partial class Engine
             {
                 file += FEN[i] - '1'; // -1 because file will be incremented regardless
             }
-            else if (FEN[i] == 'P') { whitePieces[pos] = GetRank(pos)==1? Piece.VirginPawn:Piece.Pawn; }
+            else if (FEN[i] == 'P') { whitePieces[pos] = Piece.VirginPawn; }
             else if (FEN[i] == 'R') { whitePieces[pos] = Piece.Rook; }
             else if (FEN[i] == 'N') { whitePieces[pos] = Piece.Knight; }
             else if (FEN[i] == 'B') { whitePieces[pos] = Piece.Bishop; }
             else if (FEN[i] == 'Q') { whitePieces[pos] = Piece.Queen; }
             else if (FEN[i] == 'K') { whitePieces[pos] = Piece.VirginKing; }
 
-            else if (FEN[i] == 'p') { blackPieces[pos] = GetRank(pos)==NRanks-2? Piece.VirginPawn:Piece.Pawn; }
+            else if (FEN[i] == 'p') { blackPieces[pos] = Piece.VirginPawn; }
             else if (FEN[i] == 'r') { blackPieces[pos] = Piece.Rook; }
             else if (FEN[i] == 'n') { blackPieces[pos] = Piece.Knight; }
             else if (FEN[i] == 'b') { blackPieces[pos] = Piece.Bishop; }
@@ -122,7 +120,7 @@ public partial class Engine
                 castles[pos] = new HashSet<int>();
             }
         }
-        while (FEN[i] != ' ') // add rooks
+        while (FEN[i] != ' ') // make rooks virgins
         {
             if ((FEN[i] >= 'A' && FEN[i] <= 'Z') || (FEN[i] >= 'a' && FEN[i] <= 'z'))
             {
@@ -194,7 +192,6 @@ public partial class Engine
         i += len + 1;
         totalPly = 2*int.Parse(FEN.Substring(i)) - (prevMove.whiteMove? 1:0);
 
-        this.puush = puush;
         this.castle960 = castle960;
 
         legalMoves = FindLegalMoves(prevMove);

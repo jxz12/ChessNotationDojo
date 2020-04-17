@@ -181,15 +181,14 @@ public partial class Engine
                     }
                     
                     // puush
-                    if (allies[pos] == Piece.VirginPawn && puush)
+                    if (allies[pos] == Piece.VirginPawn)
                     {
                         int maxSteps = whiteToMove? (NRanks/2-1 - GetRank(pos)) : (NRanks/2-1 - (NRanks-GetRank(pos)-1));
-                        // TODO: test this
                         for (int steps=2; steps<=maxSteps; steps++)
                         {
                             if (!Occupied(pos+steps*forward))
                             {
-                                push = new Move() {
+                                var puush = new Move() {
                                     whiteMove = whiteToMove,
                                     source = pos,
                                     target = pos + steps*forward,
@@ -198,9 +197,8 @@ public partial class Engine
                                     promotion = Piece.Pawn,
                                     previous = current
                                 };
-                                foreach (Move m in PromotionsIfPossible(push)) { // TODO: maybe stupid
-                                    yield return m;
-                                }
+                                yield return puush;
+                                // no need to check for promotion because you can never puush further than half way
                             }
                             else
                             {

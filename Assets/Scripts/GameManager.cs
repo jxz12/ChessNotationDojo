@@ -66,16 +66,16 @@ public class GameManager : MonoBehaviour
         }
         
         computerPlayingWhite = null;
-        InitBoard(FEN, true, false);
+        InitBoard(FEN, false);
         ResetCandidates();
     }
     bool? computerPlayingWhite = null;
-    public void StartFullGame(string FEN, bool puush, bool castle960, bool? computerPlaysWhite=null)
+    public void StartFullGame(string FEN, bool castle960, bool? computerPlaysWhite=null)
     {
         sequence = null;
         movesText.text = "1.";
 
-        InitBoard(FEN, puush, castle960);
+        InitBoard(FEN, castle960);
 
         computerPlayingWhite = computerPlaysWhite;
         board.FlipBoard(computerPlayingWhite ?? false);
@@ -87,7 +87,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    void InitBoard(string FEN, bool puush, bool castle960)
+    void InitBoard(string FEN, bool castle960)
     {
         if (thomas != null)
         {
@@ -100,7 +100,7 @@ public class GameManager : MonoBehaviour
             }
             files.Clear();
         }
-        thomas = new Engine(FEN, puush, castle960);
+        thomas = new Engine(FEN, castle960);
 
         files = new List<Button>();
         for (int i=0; i<thomas.NFiles; i++)

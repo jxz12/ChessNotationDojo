@@ -28,8 +28,8 @@ namespace Tests
                 sw.Start();
                 int nodess = thomas.Perft(ply);
                 sw.Stop();
-                Assert.IsTrue(nodess==nodes);
                 MonoBehaviour.print($"n={nodes} t={sw.Elapsed}");
+                Assert.IsTrue(nodess==nodes);
             }
             DoPerft(classicFEN, 4, 197281);
             DoPerft(kiwiPete, 3, 97862);
