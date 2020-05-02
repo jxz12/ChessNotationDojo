@@ -233,8 +233,8 @@ PlayerSettings:
   iOSLaunchScreeniPadFillPct: 100
   iOSLaunchScreeniPadSize: 100
   iOSLaunchScreeniPadCustomXibPath: 
-  iOSUseLaunchScreenStoryboard: 0
-  iOSLaunchScreenCustomStoryboardPath: 
+  iOSUseLaunchScreenStoryboard: 1
+  iOSLaunchScreenCustomStoryboardPath: Assets/Sprites/LaunchScreen.storyboard
   iOSDeviceRequirements: []
   iOSURLSchemes: []
   iOSBackgroundModes: 0

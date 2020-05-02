@@ -437,4 +437,13 @@ public class GameManager : MonoBehaviour
             movesRT.anchoredPosition = Vector2.zero;
         }
     }
+#if UNITY_EDITOR
+    int i=0;
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space)) {
+            ScreenCapture.CaptureScreenshot($"{Screen.width}x{Screen.height} {i}.png");
+        }
+    }
+#endif
 }

@@ -14,10 +14,8 @@ public class BoardAscii : MonoBehaviour
 
     void LateUpdate()
     {
-        // var size = GetComponent<RectTransform>().sizeDelta;
-        // float width = Mathf.Min(size.y / nRanks, size.x / nFiles);
         var rect = GetComponent<RectTransform>().rect;
-        float width = Mathf.Min(rect.width / nRanks, rect.height / nFiles);
+        float width = Mathf.Min(rect.width / nFiles, rect.height / nRanks);
         GetComponent<GridLayoutGroup>().cellSize = new Vector2(width, width);
         GetComponent<GridLayoutGroup>().constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         GetComponent<GridLayoutGroup>().constraintCount = nFiles;
